@@ -135,43 +135,45 @@ function ErrorFallback() {
 
 export function TrackMap({ circuitName }: { circuitName: string }) {
   const svgUrl = circuitToSvg[circuitName] || "/tracks/bahrain-3.svg"; // Fallback to Bahrain if unknown
-  const container = useRef<HTMLDivElement>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div ref={container} className="relative w-full h-full min-h-[300px] flex items-center justify-center bg-transparent group rounded-[2rem] overflow-hidden">
+    <div ref={setContainer} className="relative w-full h-full min-h-[300px] flex items-center justify-center bg-transparent group rounded-[2rem] overflow-hidden">
       
       {/* 3D Hint text */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
         <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Drag to rotate • Scroll to zoom</span>
       </div>
 
-      <ErrorBoundary fallback={<ErrorFallback />}>
-        <Canvas eventSource={container} shadows camera={{ position: [0, 8, 12], fov: 45 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
-          
-          <ambientLight intensity={0.4} />
-          <spotLight position={[0, 20, 0]} angle={0.5} penumbra={1} intensity={2} castShadow />
-          <spotLight position={[-10, 10, -10]} angle={0.5} penumbra={1} intensity={1} color="#D4FF00" />
-          
-          <Suspense fallback={<LoadingFallback />}>
-            <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-              <Track3DModel svgUrl={svgUrl} />
-            </Float>
-            <OrbitControls 
-              enablePan={true} 
-              enableZoom={true} 
-              maxPolarAngle={Math.PI / 2 - 0.1} 
-              minPolarAngle={0}
-              minDistance={3}
-              maxDistance={30}
-              autoRotate
-              autoRotateSpeed={0.5}
-            />
-          </Suspense>
+      {container && (
+        <ErrorBoundary fallback={<ErrorFallback />}>
+          <Canvas eventSource={container} shadows camera={{ position: [0, 8, 12], fov: 45 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
+            
+            <ambientLight intensity={0.4} />
+            <spotLight position={[0, 20, 0]} angle={0.5} penumbra={1} intensity={2} castShadow />
+            <spotLight position={[-10, 10, -10]} angle={0.5} penumbra={1} intensity={1} color="#D4FF00" />
+            
+            <Suspense fallback={<LoadingFallback />}>
+              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+                <Track3DModel svgUrl={svgUrl} />
+              </Float>
+              <OrbitControls 
+                enablePan={true} 
+                enableZoom={true} 
+                maxPolarAngle={Math.PI / 2 - 0.1} 
+                minPolarAngle={0}
+                minDistance={3}
+                maxDistance={30}
+                autoRotate
+                autoRotateSpeed={0.5}
+              />
+            </Suspense>
 
-          <ContactShadows position={[0, -2, 0]} opacity={0.6} scale={30} blur={2.5} far={10} color="#000000" />
-          <Environment preset="city" />
-        </Canvas>
-      </ErrorBoundary>
+            <ContactShadows position={[0, -2, 0]} opacity={0.6} scale={30} blur={2.5} far={10} color="#000000" />
+            <Environment preset="city" />
+          </Canvas>
+        </ErrorBoundary>
+      )}
     </div>
   );
 }

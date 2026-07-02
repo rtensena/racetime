@@ -32,45 +32,47 @@ function HelmetModel() {
 }
 
 export function FooterHelmet() {
-  const container = useRef<HTMLDivElement>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div ref={container} className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
-      <ErrorBoundary fallback={<div className="text-white text-xs text-center mt-32">Failed to load 3D Model</div>}>
-        <Canvas
-          eventSource={container}
-          camera={{ position: [0, 0, 6], fov: 45 }}
-          gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
-        >
-          <Suspense fallback={<Loader />}>
-            <ambientLight intensity={1.5} />
-            <directionalLight position={[10, 10, 5]} intensity={2} color="#D4FF00" />
-            <directionalLight position={[-10, -10, -5]} intensity={1.5} color="#ffffff" />
-            
-            <Environment preset="city" />
+    <div ref={setContainer} className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
+      {container && (
+        <ErrorBoundary fallback={<div className="text-white text-xs text-center mt-32">Failed to load 3D Model</div>}>
+          <Canvas
+            eventSource={container}
+            camera={{ position: [0, 0, 6], fov: 45 }}
+            gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+          >
+            <Suspense fallback={<Loader />}>
+              <ambientLight intensity={1.5} />
+              <directionalLight position={[10, 10, 5]} intensity={2} color="#D4FF00" />
+              <directionalLight position={[-10, -10, -5]} intensity={1.5} color="#ffffff" />
+              
+              <Environment preset="city" />
 
-            <HelmetModel />
+              <HelmetModel />
 
-            <ContactShadows 
-              position={[0, -1.5, 0]} 
-              opacity={0.6} 
-              scale={10} 
-              blur={3} 
-              far={4} 
-              color="#000000"
-            />
+              <ContactShadows 
+                position={[0, -1.5, 0]} 
+                opacity={0.6} 
+                scale={10} 
+                blur={3} 
+                far={4} 
+                color="#000000"
+              />
 
-            <OrbitControls 
-              enableZoom={false} 
-              enablePan={false} 
-              autoRotate 
-              autoRotateSpeed={2.5}
-              maxPolarAngle={Math.PI / 2} 
-              minPolarAngle={Math.PI / 3} 
-            />
-          </Suspense>
-        </Canvas>
-      </ErrorBoundary>
+              <OrbitControls 
+                enableZoom={false} 
+                enablePan={false} 
+                autoRotate 
+                autoRotateSpeed={2.5}
+                maxPolarAngle={Math.PI / 2} 
+                minPolarAngle={Math.PI / 3} 
+              />
+            </Suspense>
+          </Canvas>
+        </ErrorBoundary>
+      )}
     </div>
   );
 }

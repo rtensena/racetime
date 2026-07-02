@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, Suspense } from "react";
+import { useRef, Suspense, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, ContactShadows, Float, useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -77,31 +77,33 @@ function SceneCamera({ scrollProxy }: { scrollProxy: { progress: number } }) {
 }
 
 export function Hero3DScene({ scrollProxy }: { scrollProxy: { progress: number } }) {
-  const container = useRef<HTMLDivElement>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div ref={container} className="absolute inset-0 w-full h-full">
-      <ErrorBoundary fallback={<FallbackMessage />}>
-        <Suspense fallback={
-          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-            <HtmlLoader />
-          </div>
-        }>
-          <Canvas eventSource={container} shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
-          <SceneCamera scrollProxy={scrollProxy} />
-          <ambientLight intensity={0.6} />
-          <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
-          <spotLight position={[-10, 10, -10]} angle={0.3} penumbra={1} intensity={1} color="#D4FF00" />
-          
-          <Suspense fallback={<CanvasLoader />}>
-            <ExternalF1Car scrollProxy={scrollProxy} />
+    <div ref={setContainer} className="absolute inset-0 w-full h-full">
+      {container && (
+        <ErrorBoundary fallback={<FallbackMessage />}>
+          <Suspense fallback={
+            <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+              <HtmlLoader />
+            </div>
+          }>
+            <Canvas eventSource={container} shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
+            <SceneCamera scrollProxy={scrollProxy} />
+            <ambientLight intensity={0.6} />
+            <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
+            <spotLight position={[-10, 10, -10]} angle={0.3} penumbra={1} intensity={1} color="#D4FF00" />
+            
+            <Suspense fallback={<CanvasLoader />}>
+              <ExternalF1Car scrollProxy={scrollProxy} />
+            </Suspense>
+            
+            <Environment preset="city" />
+            <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />
+          </Canvas>
           </Suspense>
-          
-          <Environment preset="city" />
-          <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />
-        </Canvas>
-        </Suspense>
-      </ErrorBoundary>
+        </ErrorBoundary>
+      )}
     </div>
   );
 }
