@@ -16,7 +16,6 @@ const anton = Anton({
 
 import { QueryProvider } from "@/providers/QueryProvider";
 import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { GlobalPreloader } from "@/components/ui/GlobalPreloader";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 
@@ -40,7 +39,6 @@ export default function RootLayout({
           <main className="flex-1">
             {children}
           </main>
-          <Footer />
         </QueryProvider>
       </body>
     </html>

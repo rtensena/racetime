@@ -2,6 +2,7 @@ import { HeroAbout } from "@/components/home/HeroAbout";
 import { HeroCountdown } from "@/components/home/HeroCountdown";
 import { ScheduleSection } from "@/components/home/ScheduleSection";
 import { StandingsSection } from "@/components/home/StandingsSection";
+import { Footer } from "@/components/layout/Footer";
 
 export default function Home() {
   return (
@@ -18,6 +19,8 @@ export default function Home() {
       </div>
 
       <div className="h-32" />
+      
+      <Footer />
     </div>
   );
 }

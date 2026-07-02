@@ -31,6 +31,51 @@ export const api = {
           status = "Ongoing";
         }
 
+        const sessions: any[] = [];
+        
+        // Helper to safely add session
+        const addSession = (name: string, sessionObj: any) => {
+          if (sessionObj) {
+            sessions.push({
+              id: `${r.round}-${name.replace(/\s+/g, '')}`,
+              name: name,
+              date: `${sessionObj.date}T${sessionObj.time || '00:00:00Z'}`,
+              status: "Upcoming" // This will be refined later based on current time
+            });
+          }
+        };
+
+        addSession("Practice 1", r.FirstPractice);
+        addSession("Practice 2", r.SecondPractice);
+        addSession("Practice 3", r.ThirdPractice);
+        addSession("Qualifying", r.Qualifying);
+        addSession("Sprint Qualifying", r.SprintQualifying || r.SprintShootout);
+        addSession("Sprint", r.Sprint);
+        
+        // Add the main race
+        sessions.push({
+          id: `${r.round}-Race`,
+          name: "Race",
+          date: `${r.date}T${r.time || '00:00:00Z'}`,
+          status: status // Main race status matches overall status (roughly)
+        });
+
+        // Sort sessions chronologically
+        sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // Update session status dynamically
+        sessions.forEach(s => {
+          const sDate = new Date(s.date);
+          // Assuming each session lasts ~2 hours
+          if (now.getTime() > sDate.getTime() + 2 * 60 * 60 * 1000) {
+            s.status = "Finished";
+          } else if (now.getTime() >= sDate.getTime()) {
+            s.status = "Live";
+          } else {
+            s.status = "Upcoming";
+          }
+        });
+
         return {
           id: r.round,
           name: r.raceName,
@@ -39,7 +84,7 @@ export const api = {
           date: r.date,
           isSprintWeekend: !!r.Sprint,
           status,
-          sessions: [],
+          sessions: sessions,
           length: "",
           distance: "",
           laps: 0,

@@ -35,19 +35,19 @@ export function ScheduleSection() {
     gp.country.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
-  // Emoji flag mapper helper
-  const getFlagEmoji = (country: string) => {
-    const flags: Record<string, string> = {
-      "Bahrain": "🇧🇭", "Saudi Arabia": "🇸🇦", "Australia": "🇦🇺", "Japan": "🇯🇵",
-      "China": "🇨🇳", "Miami": "🇺🇸", "Emilia Romagna": "🇮🇹", "Monaco": "🇲🇨",
-      "Canada": "🇨🇦", "Spain": "🇪🇸", "Austria": "🇦🇹", "Great Britain": "🇬🇧",
-      "Hungary": "🇭🇺", "Belgium": "🇧🇪", "Netherlands": "🇳🇱", "Italy": "🇮🇹",
-      "Azerbaijan": "🇦🇿", "Singapore": "🇸🇬", "United States": "🇺🇸", "Mexico": "🇲🇽",
-      "Brazil": "🇧🇷", "Las Vegas": "🇺🇸", "Qatar": "🇶🇦", "Abu Dhabi": "🇦🇪",
-      "Argentina": "🇦🇷", "South Africa": "🇿🇦", "Germany": "🇩🇪", "France": "🇫🇷",
-      "Portugal": "🇵🇹", "Turkey": "🇹🇷", "Malaysia": "🇲🇾", "India": "🇮🇳", "Korea": "🇰🇷"
+  const getCountryCode = (country: string) => {
+    const codes: Record<string, string> = {
+      "Bahrain": "bh", "Saudi Arabia": "sa", "Australia": "au", "Japan": "jp",
+      "China": "cn", "USA": "us", "United States": "us", "Miami": "us", "Las Vegas": "us",
+      "Emilia Romagna": "it", "Monaco": "mc", "Canada": "ca", "Spain": "es", 
+      "Austria": "at", "UK": "gb", "Great Britain": "gb", "Hungary": "hu", 
+      "Belgium": "be", "Netherlands": "nl", "Italy": "it", "Azerbaijan": "az", 
+      "Singapore": "sg", "Mexico": "mx", "Brazil": "br", "Qatar": "qa", 
+      "UAE": "ae", "Abu Dhabi": "ae", "Argentina": "ar", "South Africa": "za", 
+      "Germany": "de", "France": "fr", "Portugal": "pt", "Turkey": "tr", 
+      "Malaysia": "my", "India": "in", "Korea": "kr"
     };
-    return flags[country] || "🏁";
+    return codes[country] || "un";
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -145,8 +145,16 @@ export function ScheduleSection() {
                       "block group border-b border-white/5 transition-colors duration-300 relative overflow-hidden",
                       isNextRace ? "bg-race-gray-2" : "hover:bg-white/[0.03]"
                     )}
-                    onMouseEnter={() => setHoveredCircuit(gp.circuit)}
-                    onClick={() => setHoveredCircuit(gp.circuit)}
+                    onMouseEnter={() => {
+                      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                        setHoveredCircuit(gp.circuit);
+                      }
+                    }}
+                    onClick={() => {
+                      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                        setHoveredCircuit(gp.circuit);
+                      }
+                    }}
                   >
                     <Link href={`/schedule/${gp.id}`} className="grid grid-cols-12 gap-4 items-center py-5 px-6 cursor-pointer relative z-10">
                       
@@ -172,7 +180,16 @@ export function ScheduleSection() {
                           )}>
                             {gp.country}
                           </h3>
-                          <span className="text-xl md:text-2xl leading-none grayscale group-hover:grayscale-0 transition-all">{getFlagEmoji(gp.country)}</span>
+                          {getCountryCode(gp.country) !== "un" ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img 
+                              src={`https://flagcdn.com/w40/${getCountryCode(gp.country)}.png`} 
+                              alt={`${gp.country} flag`}
+                              className="w-8 md:w-10 rounded-sm object-cover shadow-lg border border-white/10"
+                            />
+                          ) : (
+                            <span className="text-xl md:text-2xl leading-none">🏁</span>
+                          )}
                         </div>
                         
                         {gp.isSprintWeekend && (

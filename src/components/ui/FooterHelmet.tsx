@@ -32,27 +32,6 @@ function HelmetModel() {
 }
 
 export function FooterHelmet() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    // Basic mobile detection
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  if (isMobile) {
-    // 2D Fallback for mobile to prevent WebGL crashes/stuck loading
-    return (
-      <div className="w-[400px] h-[500px] flex items-center justify-center flex-col opacity-50 relative pointer-events-none">
-        <div className="w-48 h-48 rounded-full border border-race-accent/20 flex items-center justify-center bg-black shadow-[0_0_50px_rgba(212,255,0,0.2)]">
-          <span className="text-race-accent font-display text-4xl">7X</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
       <ErrorBoundary fallback={<div className="text-white text-xs text-center mt-32">Failed to load 3D Model</div>}>
