@@ -9,7 +9,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 export function HeroCountdown() {
-  const nextGp = mockGrandPrix.find((gp) => gp.status === "Upcoming") || mockGrandPrix[0];
+  const nextGp = mockGrandPrix.find((gp) => gp.status === "Upcoming" || gp.status === "Ongoing") || mockGrandPrix[0];
   const [timeLeft, setTimeLeft] = useState({ d: "00", h: "00", m: "00", s: "00" });
   const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLElement>(null);

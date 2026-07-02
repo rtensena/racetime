@@ -55,14 +55,7 @@ export function StandingsSection() {
     const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (isReducedMotion) return;
 
-    // Pin the entire standings section while scrolling through it
-    ScrollTrigger.create({
-      trigger: containerRef.current,
-      start: "top top",
-      end: "+=800", // Pin for 800px
-      pin: true,
-      anticipatePin: 1,
-    });
+    // Removed pinning to allow natural page scroll
 
     // Scrub header opacity/y
     gsap.fromTo(headerRef.current,
@@ -98,14 +91,14 @@ export function StandingsSection() {
   }, { scope: containerRef });
 
   return (
-    <section id="standings" ref={containerRef} className="container mx-auto px-4 md:px-8 py-24 max-w-5xl min-h-screen flex flex-col justify-center">
+    <section id="standings" ref={containerRef} className="container mx-auto px-4 md:px-8 py-12 md:py-16 max-w-4xl flex flex-col justify-center">
       <div ref={headerRef} className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 opacity-0">
         <div>
-          <h2 className="text-5xl md:text-7xl font-display uppercase tracking-widest mb-4">
+          <h2 className="text-4xl md:text-5xl font-display uppercase tracking-widest mb-3">
             World <span className="text-race-accent">Championship</span>
           </h2>
           <div className="flex flex-col gap-1">
-            <p className="text-white/60 font-sans text-lg uppercase tracking-wider font-medium max-w-2xl">
+            <p className="text-white/60 font-sans text-sm md:text-base uppercase tracking-wider font-medium max-w-2xl">
               Live Season Standings
             </p>
             {lastUpdated > 0 && (
@@ -121,7 +114,7 @@ export function StandingsSection() {
           <select
             value={season}
             onChange={(e) => setSeason(e.target.value)}
-            className="bg-race-gray/80 backdrop-blur-md border border-white/10 rounded-full py-3 px-6 text-white focus:outline-none focus:border-race-accent transition-colors appearance-none cursor-pointer text-sm font-bold uppercase tracking-widest relative z-20"
+            className="bg-race-gray/80 backdrop-blur-md border border-white/10 rounded-full py-2 px-4 text-white focus:outline-none focus:border-race-accent transition-colors appearance-none cursor-pointer text-xs font-bold uppercase tracking-widest relative z-20"
           >
             <option value="2026">2026 Season</option>
             <option value="2025">2025 Season</option>
@@ -133,7 +126,7 @@ export function StandingsSection() {
             <button
               onClick={() => setTab("drivers")}
               className={cn(
-                "relative z-10 px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest transition-colors duration-300",
+                "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
                 tab === "drivers" ? "text-black" : "text-white/60 hover:text-white"
               )}
             >
@@ -142,7 +135,7 @@ export function StandingsSection() {
             <button
               onClick={() => setTab("constructors")}
               className={cn(
-                "relative z-10 px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest transition-colors duration-300",
+                "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
                 tab === "constructors" ? "text-black" : "text-white/60 hover:text-white"
               )}
             >
@@ -152,11 +145,11 @@ export function StandingsSection() {
             {/* Sliding Pill Background for Tabs */}
             <motion.div 
               layout
-              className="absolute top-1 bottom-1 w-[114px] bg-race-accent rounded-full z-0"
+              className="absolute top-1 bottom-1 w-[80px] bg-race-accent rounded-full z-0"
               initial={false}
               animate={{
-                x: tab === "drivers" ? 4 : 118,
-                width: tab === "drivers" ? 104 : 144
+                x: tab === "drivers" ? 4 : 88,
+                width: tab === "drivers" ? 80 : 120
               }}
               transition={sharpTransition}
             />
@@ -164,11 +157,11 @@ export function StandingsSection() {
         </div>
       </div>
 
-      <div ref={listRef} className="relative h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-race-accent scrollbar-track-white/5 opacity-0 pb-12">
+      <div ref={listRef} className="relative pr-4 opacity-0 pb-12">
         {isLoading && (
           <div className="flex flex-col gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="w-full h-24 rounded-xl border border-white/5" />
+              <Skeleton key={i} className="w-full h-16 rounded-xl border border-white/5" />
             ))}
           </div>
         )}
@@ -187,7 +180,7 @@ export function StandingsSection() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: tab === "drivers" ? 20 : -20 }}
               transition={sharpTransition}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-2"
             >
               <AnimatePresence>
                 {tab === "drivers" && drivers && drivers.map((driver, index) => (
@@ -202,29 +195,29 @@ export function StandingsSection() {
                       delay: index * 0.05
                     }}
                     key={driver.driverId}
-                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-4 md:p-6 hover:shadow-[0_0_30px_rgba(212,255,0,0.2)] hover:border-race-accent/40 transition-colors group cursor-pointer"
+                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-3 md:p-4 hover:shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-race-accent/40 transition-colors group cursor-pointer"
                   >
-                    <div className="w-12 text-center text-4xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
+                    <div className="w-8 text-center text-2xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
                       {driver.position}
                     </div>
 
                     <div className="flex-1 ml-6">
-                      <p className="text-sm font-bold uppercase tracking-widest text-white/60 group-hover:text-white/80 transition-colors">
+                      <p className="text-xs font-bold uppercase tracking-widest text-white/60 group-hover:text-white/80 transition-colors">
                         {driver.firstName}
                       </p>
-                      <p className="text-2xl md:text-3xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
+                      <p className="text-lg md:text-xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
                         {driver.lastName}
                       </p>
-                      <p className="text-xs font-medium uppercase tracking-widest text-white/40 mt-1">
+                      <p className="text-[10px] font-medium uppercase tracking-widest text-white/40 mt-0.5">
                         {driver.team}
                       </p>
                     </div>
 
                     <div className="text-right flex items-baseline gap-2">
-                      <p className="text-4xl md:text-5xl font-display text-white group-hover:scale-105 origin-right transition-transform">
+                      <p className="text-2xl md:text-3xl font-display text-white group-hover:scale-105 origin-right transition-transform">
                         {driver.points} 
                       </p>
-                      <span className="text-sm text-white/40 uppercase tracking-widest font-bold">PTS</span>
+                      <span className="text-xs text-white/40 uppercase tracking-widest font-bold">PTS</span>
                     </div>
                   </motion.div>
                 ))}
@@ -241,23 +234,23 @@ export function StandingsSection() {
                       delay: index * 0.05
                     }}
                     key={constructor.teamId}
-                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-4 md:p-6 hover:shadow-[0_0_30px_rgba(212,255,0,0.2)] hover:border-race-accent/40 transition-colors group cursor-pointer"
+                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-3 md:p-4 hover:shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-race-accent/40 transition-colors group cursor-pointer"
                   >
-                    <div className="w-12 text-center text-4xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
+                    <div className="w-8 text-center text-2xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
                       {constructor.position}
                     </div>
 
                     <div className="flex-1 ml-6">
-                      <p className="text-2xl md:text-3xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
+                      <p className="text-lg md:text-xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
                         {constructor.name}
                       </p>
                     </div>
 
                     <div className="text-right flex items-baseline gap-2">
-                      <p className="text-4xl md:text-5xl font-display text-white group-hover:scale-105 origin-right transition-transform">
+                      <p className="text-2xl md:text-3xl font-display text-white group-hover:scale-105 origin-right transition-transform">
                         {constructor.points} 
                       </p>
-                      <span className="text-sm text-white/40 uppercase tracking-widest font-bold">PTS</span>
+                      <span className="text-xs text-white/40 uppercase tracking-widest font-bold">PTS</span>
                     </div>
                   </motion.div>
                 ))}

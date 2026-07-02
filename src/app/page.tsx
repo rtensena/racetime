@@ -13,8 +13,12 @@ export default function Home() {
       {/* Spacer to allow scrolling momentum from Hero */}
       <div className="h-32 bg-gradient-to-b from-background to-race-gray-2/20" />
       
-      <div className="flex flex-col space-y-12">
+      <div className="flex flex-col gap-24 md:gap-32 w-full">
         <ScheduleSection />
+        
+        {/* Visual Spacer to prevent any overlap perception */}
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        
         <StandingsSection />
       </div>
 
