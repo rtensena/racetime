@@ -122,37 +122,26 @@ export function StandingsSection() {
           </select>
 
           {/* Tabs */}
-          <div className="flex bg-race-gray/80 backdrop-blur-md p-1 rounded-full border border-white/10 w-fit relative overflow-hidden z-20">
-            <button
-              onClick={() => setTab("drivers")}
-              className={cn(
-                "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
-                tab === "drivers" ? "text-black" : "text-white/60 hover:text-white"
-              )}
-            >
-              Drivers
-            </button>
-            <button
-              onClick={() => setTab("constructors")}
-              className={cn(
-                "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
-                tab === "constructors" ? "text-black" : "text-white/60 hover:text-white"
-              )}
-            >
-              Constructors
-            </button>
-            
-            {/* Sliding Pill Background for Tabs */}
-            <motion.div 
-              layout
-              className="absolute top-1 bottom-1 w-[80px] bg-race-accent rounded-full z-0"
-              initial={false}
-              animate={{
-                x: tab === "drivers" ? 4 : 88,
-                width: tab === "drivers" ? 80 : 120
-              }}
-              transition={sharpTransition}
-            />
+          <div className="flex bg-race-gray/80 backdrop-blur-md p-1 rounded-full border border-white/10 w-fit relative z-20">
+            {['drivers', 'constructors'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t as any)}
+                className={cn(
+                  "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
+                  tab === t ? "text-black" : "text-white/60 hover:text-white"
+                )}
+              >
+                {t === "drivers" ? "Drivers" : "Constructors"}
+                {tab === t && (
+                  <motion.div
+                    layoutId="activeTabPill"
+                    className="absolute inset-0 bg-race-accent rounded-full -z-10"
+                    transition={sharpTransition}
+                  />
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>

@@ -32,10 +32,13 @@ function HelmetModel() {
 }
 
 export function FooterHelmet() {
+  const container = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
+    <div ref={container} className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
       <ErrorBoundary fallback={<div className="text-white text-xs text-center mt-32">Failed to load 3D Model</div>}>
         <Canvas
+          eventSource={container}
           camera={{ position: [0, 0, 6], fov: 45 }}
           gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
         >

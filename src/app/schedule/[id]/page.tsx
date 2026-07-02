@@ -85,10 +85,10 @@ export default function GrandPrixDetail() {
           </div>
 
           {/* Mobile: Full Info, Desktop: Left Info (40%) */}
-          <div className="w-full lg:w-[40%] shrink-0 h-full overflow-y-auto pr-2 order-2 lg:order-1 flex flex-col pt-4 lg:pt-0 custom-scrollbar">
+          <div className="w-full lg:w-[40%] shrink-0 h-full flex flex-col pt-4 lg:pt-0">
              
-            <div className="shrink-0 mb-8">
-              <h1 className="text-5xl lg:text-[60px] font-display uppercase tracking-widest text-white leading-tight break-words" style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>
+            <div className="shrink-0 mb-4">
+              <h1 className="text-4xl lg:text-5xl font-display uppercase tracking-widest text-white leading-tight break-words" style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>
                 {gp.name}
               </h1>
               <p className="text-xs font-bold text-race-accent uppercase tracking-widest mt-4 max-w-[300px] lg:max-w-full text-ellipsis overflow-hidden whitespace-nowrap" title={`${gp.country} AT ${gp.circuit}`}>
@@ -97,13 +97,13 @@ export default function GrandPrixDetail() {
             </div>
             
             {/* Schedule - Prominent & Second Position */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="shrink-0 mb-12 w-full">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="shrink-0 mb-6 w-full flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                 <p className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
                   <Clock className="w-4 h-4" /> Weekend Schedule
                 </p>
               </div>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {(() => {
                   const firstUpcoming = gp.sessions.find(s => s.status === "Upcoming" || s.status === "Live");
                   
@@ -113,7 +113,7 @@ export default function GrandPrixDetail() {
                     
                     return (
                       <div key={s.id} className={cn(
-                        "flex flex-col md:flex-row justify-between items-start md:items-center font-display uppercase tracking-wider p-4 md:p-5 rounded-2xl border transition-colors shadow-lg relative overflow-hidden group gap-2 md:gap-0",
+                        "flex flex-col md:flex-row justify-between items-start md:items-center font-display uppercase tracking-wider px-4 py-2.5 rounded-xl border transition-colors shadow-lg relative overflow-hidden group gap-2 md:gap-0",
                         isRace ? "bg-[#1a2600] border-race-accent/40 hover:bg-[#253600]" : 
                         isNextUp ? "bg-white/[0.08] border-white/30 hover:bg-white/10" : 
                         "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
@@ -128,8 +128,8 @@ export default function GrandPrixDetail() {
 
                         <div className="flex items-center gap-3">
                           <span className={cn(
-                            "text-xl md:text-2xl", 
-                            isRace ? "text-race-accent drop-shadow-[0_0_10px_rgba(212,255,0,0.4)] font-bold md:text-3xl" : "text-white"
+                            "text-lg md:text-xl", 
+                            isRace ? "text-race-accent drop-shadow-[0_0_10px_rgba(212,255,0,0.4)] font-bold md:text-2xl" : "text-white"
                           )}>
                             {s.name}
                           </span>
@@ -141,11 +141,11 @@ export default function GrandPrixDetail() {
                         </div>
                         
                         <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-end">
-                          <span className="text-white/50 text-xs md:text-sm font-sans font-semibold tracking-wider">
+                          <span className="text-white/50 text-xs font-sans font-semibold tracking-wider">
                             {format(new Date(s.date), "EEE, dd MMM")}
                           </span>
                           <span className={cn(
-                            "font-bold text-2xl md:text-3xl text-right", 
+                            "font-bold text-xl md:text-2xl text-right", 
                             isRace ? "text-race-accent" : "text-white"
                           )}>
                             {format(new Date(s.date), "HH:mm")}
@@ -159,37 +159,37 @@ export default function GrandPrixDetail() {
             </motion.div>
              
             {/* Stats Grid - Moved down */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 mb-10 border-t border-white/10 pt-10 shrink-0">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4 border-t border-white/10 pt-4 shrink-0">
               <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">When</p>
-                <p className="text-3xl lg:text-4xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">When</p>
+                <p className="text-2xl lg:text-3xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                   {format(new Date(gp.date), "dd-MM")}
                 </p>
-                <p className="text-sm font-bold text-white/60 uppercase tracking-widest mt-1">{format(new Date(gp.date), "MMM yyyy")}</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-0.5">{format(new Date(gp.date), "MMM yyyy")}</p>
               </motion.div>
 
               <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Length</p>
-                <p className="text-3xl lg:text-4xl font-display text-white">
-                  {gp.length || "5.891"} <span className="text-sm text-white/40">KM</span>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">Length</p>
+                <p className="text-2xl lg:text-3xl font-display text-white">
+                  {gp.length || "5.891"} <span className="text-xs text-white/40">KM</span>
                 </p>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-4 mb-1">First Competed</p>
-                <p className="text-xl font-display text-race-accent">{gp.firstCompeted || "1950"}</p>
+                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-2 mb-0.5">First Competed</p>
+                <p className="text-lg font-display text-race-accent">{gp.firstCompeted || "1950"}</p>
               </motion.div>
 
               <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Distance</p>
-                <p className="text-3xl lg:text-4xl font-display text-white">
-                  {gp.distance || "306.332"} <span className="text-sm text-white/40">KM</span>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">Distance</p>
+                <p className="text-2xl lg:text-3xl font-display text-white">
+                  {gp.distance || "306.332"} <span className="text-xs text-white/40">KM</span>
                 </p>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-4 mb-1">Laps</p>
-                <p className="text-xl font-display text-race-accent">{gp.laps || "52"}</p>
+                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-2 mb-0.5">Laps</p>
+                <p className="text-lg font-display text-race-accent">{gp.laps || "52"}</p>
               </motion.div>
             </div>
 
             {/* Description - Bottom */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="mb-8 hidden lg:block shrink-0 pt-6 border-t border-white/10">
-              <p className="text-sm text-white/80 leading-relaxed font-sans">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="mb-0 hidden lg:block shrink-0 pt-2 border-t border-white/10">
+              <p className="text-xs text-white/70 leading-relaxed font-sans">
                 {gp.description || "One of the most iconic races on the calendar, featuring high speeds and intense corners."}
               </p>
             </motion.div>

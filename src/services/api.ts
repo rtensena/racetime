@@ -1,5 +1,6 @@
 import axios from "axios";
 import { GrandPrix, DriverStanding, ConstructorStanding } from "@/lib/types";
+import { mockGrandPrix } from "@/lib/mockData";
 
 // Base URLs
 const OPEN_F1_API = "https://api.openf1.org/v1";
@@ -76,6 +77,9 @@ export const api = {
           }
         });
 
+        // Merge with mockData to get factual length, distance, laps
+        const factualData = mockGrandPrix.find(m => m.circuit === r.Circuit.circuitName || m.country === r.Circuit.Location.country);
+
         return {
           id: r.round,
           name: r.raceName,
@@ -85,9 +89,9 @@ export const api = {
           isSprintWeekend: !!r.Sprint,
           status,
           sessions: sessions,
-          length: "",
-          distance: "",
-          laps: 0,
+          length: factualData?.length || "5.000",
+          distance: factualData?.distance || "300.000",
+          laps: factualData?.laps || 50,
         };
       });
     } catch (error) {

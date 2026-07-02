@@ -135,9 +135,10 @@ function ErrorFallback() {
 
 export function TrackMap({ circuitName }: { circuitName: string }) {
   const svgUrl = circuitToSvg[circuitName] || "/tracks/bahrain-3.svg"; // Fallback to Bahrain if unknown
+  const container = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative w-full h-full min-h-[300px] flex items-center justify-center bg-transparent group rounded-[2rem] overflow-hidden">
+    <div ref={container} className="relative w-full h-full min-h-[300px] flex items-center justify-center bg-transparent group rounded-[2rem] overflow-hidden">
       
       {/* 3D Hint text */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -145,7 +146,7 @@ export function TrackMap({ circuitName }: { circuitName: string }) {
       </div>
 
       <ErrorBoundary fallback={<ErrorFallback />}>
-        <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
+        <Canvas eventSource={container} shadows camera={{ position: [0, 8, 12], fov: 45 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
           
           <ambientLight intensity={0.4} />
           <spotLight position={[0, 20, 0]} angle={0.5} penumbra={1} intensity={2} castShadow />

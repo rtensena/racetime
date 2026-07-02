@@ -77,14 +77,17 @@ function SceneCamera({ scrollProxy }: { scrollProxy: { progress: number } }) {
 }
 
 export function Hero3DScene({ scrollProxy }: { scrollProxy: { progress: number } }) {
+  const container = useRef<HTMLDivElement>(null);
+
   return (
-    <ErrorBoundary fallback={<FallbackMessage />}>
-      <Suspense fallback={
-        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-          <HtmlLoader />
-        </div>
-      }>
-        <Canvas shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
+    <div ref={container} className="absolute inset-0 w-full h-full">
+      <ErrorBoundary fallback={<FallbackMessage />}>
+        <Suspense fallback={
+          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+            <HtmlLoader />
+          </div>
+        }>
+          <Canvas eventSource={container} shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
           <SceneCamera scrollProxy={scrollProxy} />
           <ambientLight intensity={0.6} />
           <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
@@ -97,8 +100,9 @@ export function Hero3DScene({ scrollProxy }: { scrollProxy: { progress: number }
           <Environment preset="city" />
           <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />
         </Canvas>
-      </Suspense>
-    </ErrorBoundary>
+        </Suspense>
+      </ErrorBoundary>
+    </div>
   );
 }
 

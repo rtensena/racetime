@@ -121,7 +121,7 @@ export function ScheduleSection() {
           <div className="grid grid-cols-12 gap-4 pb-4 border-b border-white/20 text-[10px] font-bold uppercase tracking-widest text-white/40 px-6">
             <div className="col-span-2 md:col-span-1">Round</div>
             <div className="col-span-6 md:col-span-7">Location</div>
-            <div className="col-span-4 text-right md:text-left">When</div>
+            <div className="col-span-4 text-right">When</div>
           </div>
 
           <div className="flex flex-col" onMouseLeave={() => setHoveredCircuit(null)}>
@@ -137,9 +137,13 @@ export function ScheduleSection() {
                 
                 return (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "0px 0px -50px 0px" }}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: false, margin: "0px 0px -50px 0px" }}
+                    variants={{
+                      hidden: {},
+                      visible: { transition: { staggerChildren: 0.1 } }
+                    }}
                     key={gp.id}
                     className={cn(
                       "block group border-b border-white/5 transition-colors duration-300 relative overflow-hidden",
@@ -158,8 +162,14 @@ export function ScheduleSection() {
                   >
                     <Link href={`/schedule/${gp.id}`} className="grid grid-cols-12 gap-4 items-center py-5 px-6 cursor-pointer relative z-10">
                       
-                      {/* 1. ROUND */}
-                      <div className="col-span-2 md:col-span-1 flex items-center relative w-fit">
+                      {/* 1. ROUND (SLIDES FROM LEFT) */}
+                      <motion.div 
+                        variants={{
+                          hidden: { opacity: 0, x: -40 },
+                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                        }}
+                        className="col-span-2 md:col-span-1 flex items-center relative w-fit"
+                      >
                         <span className={cn(
                           "text-2xl md:text-4xl font-display font-bold transition-colors",
                           isFinished ? "text-white/20" : isNextRace ? "text-race-accent" : "text-white/50",
@@ -169,10 +179,16 @@ export function ScheduleSection() {
                         {isFinished && (
                           <span className="absolute inset-0 w-[120%] h-[2px] bg-race-accent top-1/2 -translate-y-1/2 -rotate-12 -left-[10%]" />
                         )}
-                      </div>
+                      </motion.div>
 
-                      {/* 2. LOCATION */}
-                      <div className="col-span-6 md:col-span-7 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                      {/* 2. LOCATION (SLIDES FROM RIGHT) */}
+                      <motion.div 
+                        variants={{
+                          hidden: { opacity: 0, x: 40 },
+                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                        }}
+                        className="col-span-6 md:col-span-7 flex flex-col md:flex-row md:items-center gap-2 md:gap-4"
+                      >
                         <div className="flex items-center gap-3">
                           <h3 className={cn(
                             "text-xl md:text-3xl font-display uppercase tracking-widest leading-none truncate transition-colors",
@@ -197,10 +213,16 @@ export function ScheduleSection() {
                             Sprint
                           </span>
                         )}
-                      </div>
+                      </motion.div>
 
-                      {/* 3. WHEN */}
-                      <div className="col-span-4 flex flex-col justify-center text-right md:text-left">
+                      {/* 3. WHEN (SLIDES FROM RIGHT, SLIGHTLY DELAYED) */}
+                      <motion.div 
+                        variants={{
+                          hidden: { opacity: 0, x: 40 },
+                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+                        }}
+                        className="col-span-4 flex flex-col justify-center items-end text-right"
+                      >
                         <span className={cn(
                           "text-sm md:text-xl font-display uppercase tracking-widest transition-colors",
                           isFinished ? "text-white/20" : isNextRace ? "text-race-accent" : "text-white/80"
@@ -212,7 +234,7 @@ export function ScheduleSection() {
                             Up Next
                           </span>
                         )}
-                      </div>
+                      </motion.div>
 
                     </Link>
                   </motion.div>
