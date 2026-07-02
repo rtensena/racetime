@@ -1,0 +1,59 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .track-path {
+      fill: none;
+      stroke: #D4FF00;
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: draw 3s ease-in-out forwards, glow 2s ease-in-out infinite alternate;
+      cursor: pointer;
+      transition: stroke 0.3s ease;
+    }
+    .track-path:hover {
+      stroke: #ffffff;
+      filter: drop-shadow(0 0 20px #ffffff);
+    }
+    @keyframes draw {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+    @keyframes glow {
+      from {
+        filter: drop-shadow(0 0 10px rgba(212,255,0,0.6));
+      }
+      to {
+        filter: drop-shadow(0 0 25px rgba(212,255,0,1));
+      }
+    }
+    .sector {
+      stroke-width: 8;
+      fill: none;
+      transition: stroke 0.3s, filter 0.3s;
+    }
+    .sector-1 { stroke: #ffff00; } /* Yellow for sector 1 */
+    .sector-2 { stroke: #00ff00; } /* Green for sector 2 */
+    .sector-3 { stroke: #ff00ff; } /* Purple for sector 3 */
+    
+    .sector:hover {
+      stroke-width: 16;
+      filter: brightness(1.5) drop-shadow(0 0 10px currentColor);
+    }
+  </style>
+  <!-- Background transparent -->
+  <rect width="100%" height="100%" fill="transparent" />
+
+  <!-- The Track Path (Bahrain simplified) -->
+  <path 
+    class="track-path"
+    d="M 400 500 C 200 500, 150 400, 150 250 C 150 150, 250 100, 300 150 L 400 250 C 450 300, 500 200, 550 150 C 650 50, 700 150, 650 350 C 600 500, 500 500, 400 500 Z" 
+  />
+
+  <!-- Interactive Sectors overlay -->
+  <path class="sector sector-1" d="M 400 500 C 200 500, 150 400, 150 250" />
+  <path class="sector sector-2" d="M 150 250 C 150 150, 250 100, 300 150 L 400 250 C 450 300, 500 200, 550 150" />
+  <path class="sector sector-3" d="M 550 150 C 650 50, 700 150, 650 350 C 600 500, 500 500, 400 500" />
+</svg>
