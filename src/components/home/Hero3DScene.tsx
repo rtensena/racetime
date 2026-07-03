@@ -42,19 +42,26 @@ function FallbackMessage() {
 function ExternalF1Car({ scrollProxy }: { scrollProxy: { progress: number } }) {
   const groupRef = useRef<THREE.Group>(null);
   const { scene } = useGLTF("/f1.glb");
+  const { size } = useThree();
   
+  // Calculate dynamic scale and animation bounds based on screen size (mobile < 768px)
+  const isMobile = size.width < 768;
+  const modelScale = isMobile ? 0.6 : 1.2;
+  const driveX = isMobile ? 3 : 10;
+  const driveZ = isMobile ? 12 : 20;
+
   useFrame(() => {
     if (groupRef.current) {
       const p = scrollProxy.progress;
       
       groupRef.current.rotation.y = THREE.MathUtils.lerp(Math.PI / 6, -Math.PI / 2, p);
-      groupRef.current.position.z = THREE.MathUtils.lerp(0, p > 0.8 ? (p - 0.8) * 20 : 0, p);
-      groupRef.current.position.x = THREE.MathUtils.lerp(0, p > 0.8 ? -(p - 0.8) * 10 : 0, p);
+      groupRef.current.position.z = THREE.MathUtils.lerp(0, p > 0.8 ? (p - 0.8) * driveZ : 0, p);
+      groupRef.current.position.x = THREE.MathUtils.lerp(0, p > 0.8 ? -(p - 0.8) * driveX : 0, p);
     }
   });
 
   return (
-    <group ref={groupRef} scale={1.2} position={[0, -0.5, 0]}>
+    <group ref={groupRef} scale={modelScale} position={[0, -0.5, 0]}>
       <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
         <primitive object={scene} />
       </Float>

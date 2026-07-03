@@ -35,7 +35,7 @@ export function FooterHelmet() {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div ref={setContainer} className="w-[400px] h-[500px] pointer-events-auto cursor-grab active:cursor-grabbing relative">
+    <div ref={setContainer} className="w-full h-full pointer-events-auto cursor-grab active:cursor-grabbing relative">
       {container && (
         <ErrorBoundary fallback={<div className="text-white text-xs text-center mt-32">Failed to load 3D Model</div>}>
           <Canvas
