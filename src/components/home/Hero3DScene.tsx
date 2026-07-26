@@ -2,7 +2,7 @@
 
 import { useRef, Suspense, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, ContactShadows, Float, useGLTF, Html } from "@react-three/drei";
+import { Environment, ContactShadows, Float, useGLTF, Html, Sparkles, Grid } from "@react-three/drei";
 import * as THREE from "three";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -83,6 +83,34 @@ function SceneCamera({ scrollProxy }: { scrollProxy: { progress: number } }) {
   return null;
 }
 
+function AnimatedGrid() {
+  const gridRef = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (gridRef.current) {
+      // Pindahkan grid ke arah +z agar mobil terlihat melaju ke depan
+      gridRef.current.position.z = (state.clock.elapsedTime * 4) % 2.5;
+    }
+  });
+
+  return (
+    <group ref={gridRef}>
+      <Grid 
+        position={[0, -0.59, 0]} 
+        args={[40, 40]} 
+        cellSize={0.5} 
+        cellThickness={1} 
+        cellColor="#222222" 
+        sectionSize={2.5} 
+        sectionThickness={1.5} 
+        sectionColor="#D4FF00" 
+        fadeDistance={15} 
+        fadeStrength={1.5} 
+      />
+    </group>
+  );
+}
+
 export function Hero3DScene({ scrollProxy }: { scrollProxy: { progress: number } }) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
@@ -104,6 +132,10 @@ export function Hero3DScene({ scrollProxy }: { scrollProxy: { progress: number }
             <Suspense fallback={<CanvasLoader />}>
               <ExternalF1Car scrollProxy={scrollProxy} />
             </Suspense>
+            
+            <AnimatedGrid />
+            <Sparkles count={150} scale={15} size={2} speed={0.4} opacity={0.6} color="#D4FF00" />
+            <Sparkles count={100} scale={12} size={1} speed={0.2} opacity={0.3} color="#ffffff" />
             
             <Environment preset="city" />
             <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />

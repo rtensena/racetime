@@ -6,6 +6,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import dynamic from "next/dynamic";
 
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
+
 // Dynamically import the 3D Scene with SSR disabled.
 // This prevents ThreeJS from blocking the initial page load and hydrates it instantly.
 const Hero3DSceneLazy = dynamic(

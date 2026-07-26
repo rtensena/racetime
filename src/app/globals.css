@@ -19,7 +19,16 @@
 }
 
 body {
-  background-color: var(--background);
+  background-color: #0a0a0a;
+  background-image: 
+    radial-gradient(ellipse at 50% 0%, rgba(212, 255, 0, 0.12) 0%, transparent 70%),
+    radial-gradient(#000000 15%, transparent 16%),
+    radial-gradient(#000000 15%, transparent 16%),
+    radial-gradient(rgba(255,255,255,0.03) 15%, transparent 20%),
+    radial-gradient(rgba(255,255,255,0.03) 15%, transparent 20%);
+  background-size: 100vw 100vh, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
+  background-position: 0 0, 0 0, 8px 8px, 0 1px, 8px 9px;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
