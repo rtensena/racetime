@@ -121,7 +121,7 @@ export function HeroCountdown() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[95vh] w-full flex flex-col justify-between overflow-hidden bg-transparent text-[#E8E6E1] pt-24 sm:pt-28 pb-12"
+      className="relative h-screen w-full flex flex-col justify-between overflow-hidden bg-transparent text-[#E8E6E1] pt-24 sm:pt-28 pb-12"
     >
       {/* Top Ticker Strip */}
       <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mb-6">

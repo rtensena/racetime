@@ -1,16 +1,28 @@
 "use client";
 
-import { useRef, Suspense, useState, useMemo, useEffect } from "react";
+import { useRef, Suspense, useState, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, ContactShadows, Float, useGLTF, Html } from "@react-three/drei";
+import { Environment, ContactShadows, Float, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { ErrorBoundary } from "react-error-boundary";
 
 function FallbackBackdrop() {
   return (
-    <div className="fixed inset-0 bg-[#0D0D0C] flex items-center justify-center pointer-events-none">
-      <div className="w-full h-full opacity-10 bg-[radial-gradient(#E8462E_1px,transparent_1px)] [background-size:24px_24px]" />
-    </div>
+    <div className="fixed inset-0 bg-[#0D0D0C] pointer-events-none" />
+  );
+}
+
+function GroundPlane() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.58, 0]} receiveShadow>
+      <planeGeometry args={[50, 50]} />
+      <meshStandardMaterial
+        color="#0D0D0C"
+        metalness={0.9}
+        roughness={0.15}
+        envMapIntensity={0.4}
+      />
+    </mesh>
   );
 }
 
@@ -30,15 +42,10 @@ function F1CarModel({
 
   useFrame((_, delta) => {
     if (groupRef.current) {
-      // Dynamic rotation mapped across full page scroll:
-      // At top (p=0): front-3/4 angle
-      // Mid scroll (p=0.4): turns into sweeping cornering profile
-      // Late scroll (p=0.8): high speed tracking angle
       const scrollRotY = THREE.MathUtils.lerp(-Math.PI / 8, Math.PI * 0.85, scrollProgress);
       const scrollPosX = THREE.MathUtils.lerp(isMobile ? 0 : 0.8, isMobile ? -0.5 : -1.8, scrollProgress);
       const scrollPosZ = THREE.MathUtils.lerp(0, -2, scrollProgress);
 
-      // Interactive mouse influence for "playing" with the 3D car
       const targetRotY = scrollRotY + mousePos.x * 0.45;
       const targetRotX = mousePos.y * 0.2 + 0.05;
 
@@ -63,7 +70,6 @@ function CameraRig({ scrollProgress }: { scrollProgress: number }) {
   const { camera } = useThree();
 
   useFrame((_, delta) => {
-    // Dynamic camera movements across the entire page journey
     const targetX = THREE.MathUtils.lerp(2.8, 4.2, scrollProgress);
     const targetY = THREE.MathUtils.lerp(1.3, 2.5, scrollProgress);
     const targetZ = THREE.MathUtils.lerp(5.4, 4.6, scrollProgress);
@@ -77,40 +83,11 @@ function CameraRig({ scrollProgress }: { scrollProgress: number }) {
   return null;
 }
 
-function AnimatedGrid() {
-  const gridRef = useRef<THREE.Group>(null);
-  
-  useFrame((state) => {
-    if (gridRef.current) {
-      // Pindahkan grid ke arah +z agar mobil terlihat melaju ke depan
-      gridRef.current.position.z = (state.clock.elapsedTime * 4) % 2.5;
-    }
-  });
-
-  return (
-    <group ref={gridRef}>
-      <Grid 
-        position={[0, -0.59, 0]} 
-        args={[40, 40]} 
-        cellSize={0.5} 
-        cellThickness={1} 
-        cellColor="#222222" 
-        sectionSize={2.5} 
-        sectionThickness={1.5} 
-        sectionColor="#D4FF00" 
-        fadeDistance={15} 
-        fadeStrength={1.5} 
-      />
-    </group>
-  );
-}
-
 export function Hero3DScene() {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Global scroll listener for full-page car animation
   useEffect(() => {
     const handleScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -119,20 +96,17 @@ export function Hero3DScene() {
         setScrollProgress(p);
       }
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Global mouse tracking so user can play with car anywhere on page
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = -(e.clientY / window.innerHeight) * 2 + 1;
       setMousePos({ x, y });
     };
-
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
@@ -140,34 +114,37 @@ export function Hero3DScene() {
   return (
     <div
       ref={setContainer}
-      className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
+      className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-0 bg-[#0D0D0C]"
     >
       {container && (
-        <ErrorBoundary fallback={<FallbackMessage />}>
-          <Suspense fallback={
-            <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-              <HtmlLoader />
-            </div>
-          }>
-            <Canvas eventSource={container} shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
-            <SceneCamera scrollProxy={scrollProxy} />
-            <ambientLight intensity={0.6} />
-            <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
-            <spotLight position={[-10, 10, -10]} angle={0.3} penumbra={1} intensity={1} color="#D4FF00" />
-            
-            <Suspense fallback={<CanvasLoader />}>
-              <ExternalF1Car scrollProxy={scrollProxy} />
-            </Suspense>
-            
-            <Environment preset="city" />
-            <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />
-          </Canvas>
+        <ErrorBoundary fallback={<FallbackBackdrop />}>
+          <Suspense fallback={<FallbackBackdrop />}>
+            <Canvas
+              eventSource={container}
+              shadows
+              dpr={[1, 1.5]}
+              camera={{ position: [3, 1.5, 6], fov: 45 }}
+              gl={{ powerPreference: "high-performance", antialias: false, alpha: true }}
+              style={{ background: "transparent" }}
+            >
+              <CameraRig scrollProgress={scrollProgress} />
+
+              <ambientLight intensity={0.5} />
+              <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
+              <spotLight position={[-10, 10, -10]} angle={0.3} penumbra={1} intensity={1} color="#E8462E" />
+              <pointLight position={[5, 2, -5]} intensity={0.6} color="#E8462E" />
+
+              <Suspense fallback={null}>
+                <F1CarModel mousePos={mousePos} scrollProgress={scrollProgress} />
+              </Suspense>
+
+              <GroundPlane />
+              <Environment preset="city" />
+              <ContactShadows position={[0, -0.6, 0]} opacity={0.8} scale={20} blur={2.5} far={4} />
+            </Canvas>
           </Suspense>
         </ErrorBoundary>
       )}
-
-      {/* Subtle vignette layer that softens edges without muddying content */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0C]/80 via-transparent to-[#0D0D0C]/60 pointer-events-none" />
     </div>
   );
 }
