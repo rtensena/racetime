@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${archivo.variable} ${jetbrainsMono.variable} dark`}>
-      <body className="font-sans bg-[#0D0D0C] text-[#E8E6E1] antialiased min-h-screen flex flex-col selection:bg-accent selection:text-white">
+      <body className="font-sans bg-black text-[#E8E6E1] antialiased min-h-screen flex flex-col selection:bg-accent selection:text-white">
         <QueryProvider>
           <GlobalPreloader />
           <SmoothScroll />

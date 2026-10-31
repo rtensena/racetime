@@ -2,11 +2,11 @@
 
 @theme inline {
   /* ─── Palette ─── */
-  --color-background: #0D0D0C;
+  --color-background: #000000;
   --color-foreground: #E8E6E1;
-  --color-surface: #171715;
-  --color-surface-2: #21211E;
-  --color-rule: #2D2D29;
+  --color-surface: #111111;
+  --color-surface-2: #1a1a1a;
+  --color-rule: #262626;
   --color-muted: #78766F;
   --color-accent: #E8462E;
   --color-accent-hover: #FF5438;
@@ -15,9 +15,9 @@
 
   /* Backwards-compat aliases for standalone pages */
   --color-race-accent: #E8462E;
-  --color-race-dark: #0D0D0C;
-  --color-race-gray: #171715;
-  --color-race-gray-2: #21211E;
+  --color-race-dark: #000000;
+  --color-race-gray: #111111;
+  --color-race-gray-2: #1a1a1a;
   --color-race-light: #E8E6E1;
 
   /* ─── Font stacks ─── */
@@ -28,6 +28,8 @@
 
 /* ─── Base ─── */
 body {
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -42,7 +44,7 @@ body {
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-background); }
-::-webkit-scrollbar-thumb { background: #2D2D29; }
+::-webkit-scrollbar-thumb { background: #262626; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 
 /* ─── Selection ─── */

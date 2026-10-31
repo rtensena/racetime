@@ -14,7 +14,7 @@ const Hero3DSceneLazy = dynamic(
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-[#0D0D0C] text-[#E8E6E1]">
+    <div className="relative min-h-screen bg-black text-[#E8E6E1]">
       {/* 3D Car Persistent Across Entire Page */}
       <Hero3DSceneLazy />
 
