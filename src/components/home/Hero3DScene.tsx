@@ -2,27 +2,13 @@
 
 import { useRef, Suspense, useState, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, ContactShadows, Float, useGLTF } from "@react-three/drei";
+import { Environment, Float, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { ErrorBoundary } from "react-error-boundary";
 
 function FallbackBackdrop() {
   return (
     <div className="fixed inset-0 bg-black pointer-events-none" />
-  );
-}
-
-function GroundPlane() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.58, 0]} receiveShadow>
-      <planeGeometry args={[50, 50]} />
-      <meshStandardMaterial
-        color="#000000"
-        metalness={0.9}
-        roughness={0.2}
-        envMapIntensity={0.2}
-      />
-    </mesh>
   );
 }
 
@@ -127,6 +113,7 @@ export function Hero3DScene() {
               gl={{ powerPreference: "high-performance", antialias: false, alpha: true }}
               style={{ background: "#000000" }}
             >
+              <color attach="background" args={["#000000"]} />
               <CameraRig scrollProgress={scrollProgress} />
 
               <ambientLight intensity={0.5} />
@@ -138,9 +125,7 @@ export function Hero3DScene() {
                 <F1CarModel mousePos={mousePos} scrollProgress={scrollProgress} />
               </Suspense>
 
-              <GroundPlane />
               <Environment preset="city" />
-              <ContactShadows position={[0, -0.6, 0]} opacity={0.8} scale={20} blur={2.5} far={4} color="#000000" />
             </Canvas>
           </Suspense>
         </ErrorBoundary>
