@@ -1,30 +1,40 @@
-import { HeroAbout } from "@/components/home/HeroAbout";
+"use client";
+
+import dynamic from "next/dynamic";
 import { HeroCountdown } from "@/components/home/HeroCountdown";
 import { ScheduleSection } from "@/components/home/ScheduleSection";
 import { StandingsSection } from "@/components/home/StandingsSection";
+import { MarqueeStrip } from "@/components/home/MarqueeStrip";
 import { Footer } from "@/components/layout/Footer";
+
+const Hero3DSceneLazy = dynamic(
+  () => import("@/components/home/Hero3DScene").then((mod) => mod.Hero3DScene),
+  { ssr: false }
+);
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <HeroAbout />
-      <HeroCountdown />
-      
-      {/* Spacer to allow scrolling momentum from Hero */}
-      <div className="h-32 bg-gradient-to-b from-background to-race-gray-2/20" />
-      
-      <div className="flex flex-col gap-24 md:gap-32 w-full">
-        <ScheduleSection />
-        
-        {/* Visual Spacer to prevent any overlap perception */}
-        <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        
-        <StandingsSection />
-      </div>
+    <div className="relative min-h-screen bg-[#0D0D0C] text-[#E8E6E1]">
+      {/* 3D Car Persistent Across Entire Page */}
+      <Hero3DSceneLazy />
 
-      <div className="h-32" />
-      
-      <Footer />
+      {/* Content Stream with Seamless Transparent / Translucent Layers */}
+      <div className="relative z-10 flex flex-col">
+        {/* 1. Direct Countdown Hero */}
+        <HeroCountdown />
+
+        {/* 2. Race Calendar */}
+        <ScheduleSection />
+
+        {/* 3. Real-time World Standings */}
+        <StandingsSection />
+
+        {/* 4. Marquee Strip */}
+        <MarqueeStrip />
+
+        {/* 5. Restored Beloved Old Footer with 3D Helmet */}
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Inter, Anton } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   display: "swap",
 });
 
-const anton = Anton({
-  variable: "--font-anton",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
-  weight: "400",
+  display: "swap",
 });
 
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -20,8 +20,8 @@ import { GlobalPreloader } from "@/components/ui/GlobalPreloader";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 
 export const metadata: Metadata = {
-  title: "RaceTime | 2026 World Championship",
-  description: "The definitive 2026 World Championship schedule, standings, and live tracking.",
+  title: "RaceTime",
+  description: "The definitive 2026 motorsport World Championship hub: live telemetry, schedule, and championship standings.",
 };
 
 export default function RootLayout({
@@ -30,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${anton.variable} dark`}>
-      <body className="font-sans bg-background text-foreground antialiased min-h-screen flex flex-col selection:bg-race-accent selection:text-black">
+    <html lang="en" className={`${archivo.variable} ${jetbrainsMono.variable} dark`}>
+      <body className="font-sans bg-[#0D0D0C] text-[#E8E6E1] antialiased min-h-screen flex flex-col selection:bg-accent selection:text-white">
         <QueryProvider>
           <GlobalPreloader />
           <SmoothScroll />

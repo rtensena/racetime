@@ -1,298 +1,352 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useSchedule } from "@/hooks/useF1Data";
-import { Search, AlertTriangle, RefreshCcw } from "lucide-react";
+import { mockGrandPrix } from "@/lib/mockData";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrackMap } from "@/components/ui/TrackMap";
+import { CircuitSvg } from "@/components/ui/CircuitSvg";
+import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 export function ScheduleSection() {
   const containerRef = useRef<HTMLElement>(null);
+  const rowsRef = useRef<(HTMLDivElement | null)[]>([]);
+
   const [search, setSearch] = useState("");
   const [hoveredCircuit, setHoveredCircuit] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "FINISHED">("ALL");
 
-  const { data: schedule, isLoading, isError, refetch, dataUpdatedAt } = useSchedule("2026");
+  const { data: rawSchedule, isLoading, isError, refetch } = useSchedule("2026");
 
-  // Force ScrollTrigger and Lenis to refresh when DOM height changes (after data load)
-  useEffect(() => {
-    if (!isLoading) {
-      setTimeout(() => {
-        if (typeof window !== "undefined") {
-          ScrollTrigger.refresh();
-        }
-      }, 100);
-    }
-  }, [isLoading, schedule]);
+  const schedule = useMemo(() => {
+    return rawSchedule && rawSchedule.length > 0 ? rawSchedule : mockGrandPrix;
+  }, [rawSchedule]);
 
-  const filteredGPs = schedule?.filter((gp) =>
-    gp.name.toLowerCase().includes(search.toLowerCase()) ||
-    gp.country.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  // Find next upcoming race
+  const nextRaceId = useMemo(() => {
+    const nowTime = Date.now();
+    const upcoming = schedule.find((gp) => new Date(gp.date).getTime() > nowTime);
+    return upcoming ? upcoming.id : null;
+  }, [schedule]);
 
-  const getCountryCode = (country: string) => {
-    const codes: Record<string, string> = {
-      "Bahrain": "bh", "Saudi Arabia": "sa", "Australia": "au", "Japan": "jp",
-      "China": "cn", "USA": "us", "United States": "us", "Miami": "us", "Las Vegas": "us",
-      "Emilia Romagna": "it", "Monaco": "mc", "Canada": "ca", "Spain": "es", 
-      "Austria": "at", "UK": "gb", "Great Britain": "gb", "Hungary": "hu", 
-      "Belgium": "be", "Netherlands": "nl", "Italy": "it", "Azerbaijan": "az", 
-      "Singapore": "sg", "Mexico": "mx", "Brazil": "br", "Qatar": "qa", 
-      "UAE": "ae", "Abu Dhabi": "ae", "Argentina": "ar", "South Africa": "za", 
-      "Germany": "de", "France": "fr", "Portugal": "pt", "Turkey": "tr", 
-      "Malaysia": "my", "India": "in", "Korea": "kr"
-    };
-    return codes[country] || "un";
-  };
+  const filteredGPs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return schedule.filter((gp) => {
+      const matchSearch =
+        q === "" ||
+        gp.name.toLowerCase().includes(q) ||
+        gp.country.toLowerCase().includes(q) ||
+        gp.circuit.toLowerCase().includes(q);
+
+      const matchStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "UPCOMING" && gp.status !== "Finished") ||
+        (statusFilter === "FINISHED" && gp.status === "Finished");
+
+      return matchSearch && matchStatus;
+    });
+  }, [schedule, search, statusFilter]);
+
+  const activeGP = useMemo(() => {
+    return filteredGPs.find((gp) => gp.circuit === hoveredCircuit);
+  }, [filteredGPs, hoveredCircuit]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY });
   };
 
-  const activeGP = filteredGPs.find(gp => gp.circuit === hoveredCircuit);
+  // GSAP Staggered ScrollTrigger animation for rows
+  useGSAP(() => {
+    const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (isReducedMotion || isLoading) return;
+
+    rowsRef.current.forEach((row, idx) => {
+      if (!row) return;
+      gsap.fromTo(
+        row,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: row,
+            start: "top 92%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    });
+  }, { scope: containerRef, dependencies: [filteredGPs, isLoading] });
 
   return (
-    <section 
-      id="schedule" 
-      ref={containerRef} 
-      className="container mx-auto px-4 md:px-8 py-24 max-w-[1200px] min-h-screen relative"
+    <section
+      id="schedule"
+      ref={containerRef}
       onMouseMove={handleMouseMove}
+      className="relative w-full bg-[#0D0D0C]/85 backdrop-blur-sm text-[#E8E6E1] py-20 md:py-28 border-b border-white/10"
     >
-      <div className="mb-12 flex justify-between items-end border-b border-white/10 pb-6">
-        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}>
-          <h2 className="text-4xl md:text-6xl font-display uppercase tracking-widest mb-2 leading-none">
-            Race <span className="text-race-accent">Calendar</span>
-          </h2>
-          <div className="flex flex-col gap-1 mt-2">
-            <p className="text-white/60 font-sans text-sm uppercase tracking-wider font-medium">
-              The definitive 2026 World Championship schedule.
+      <div className="max-w-[80rem] mx-auto px-4 md:px-8">
+        
+        {/* Header Block */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-6 mb-10 gap-6">
+          <div>
+            <div className="font-mono text-xs text-[#E8462E] uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#E8462E] animate-pulse" />
+              OFFICIAL 2026 WORLD CHAMPIONSHIP CALENDAR
+            </div>
+            <h2 className="font-display font-black text-4xl sm:text-6xl uppercase tracking-tight text-white leading-none">
+              RACE <span className="text-[#E8462E]">CALENDAR</span>
+            </h2>
+            <p className="font-mono text-xs text-white/50 mt-2 max-w-xl">
+              24 Grand Prix rounds with interactive 3D track telemetry, sector blueprints, and local session timestamps.
             </p>
-            {dataUpdatedAt > 0 && (
-              <p className="text-[10px] text-race-accent font-bold uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-race-accent animate-pulse" />
-                Live: Last synced {new Date(dataUpdatedAt).toLocaleTimeString()}
-              </p>
+          </div>
+
+          {/* Controls: Search & Filter Tabs */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 font-mono text-xs">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="SEARCH GRAND PRIX..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-[#171715] border border-white/10 focus:border-[#E8462E] text-white placeholder-white/30 px-3 py-2 text-xs uppercase tracking-wider w-full sm:w-56 focus:outline-none transition-colors"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            <div className="flex border border-white/10 bg-[#171715]">
+              {(["ALL", "UPCOMING", "FINISHED"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setStatusFilter(filter)}
+                  className={`px-3 py-2 uppercase tracking-wider transition-colors ${
+                    statusFilter === filter
+                      ? "bg-[#E8462E] text-white font-bold"
+                      : "text-white/50 hover:text-white"
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="border border-white/10 bg-[#171715] divide-y divide-white/10">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-6 flex items-center justify-between animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white/10" />
+                  <div className="space-y-2">
+                    <div className="w-48 h-5 bg-white/10" />
+                    <div className="w-32 h-3 bg-white/5" />
+                  </div>
+                </div>
+                <div className="w-24 h-4 bg-white/10" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <div className="border border-[#E8462E] bg-[#171715] p-8 text-center font-mono">
+            <span className="text-[#E8462E] text-xs font-bold uppercase tracking-widest block mb-2">
+              SCHEDULE SYNCHRONIZATION ERROR
+            </span>
+            <p className="text-sm text-white/50 mb-4">
+              Failed to connect to F1 Ergast API. Local calendar cache loaded.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="border border-[#E8462E] text-[#E8462E] hover:bg-[#E8462E] hover:text-white px-4 py-2 text-xs font-bold uppercase transition-colors"
+            >
+              RETRY CONNECTION
+            </button>
+          </div>
+        )}
+
+        {/* Schedule List */}
+        {!isLoading && !isError && (
+          <div
+            className="border border-white/10 bg-[#0D0D0C]"
+            onMouseLeave={() => setHoveredCircuit(null)}
+          >
+            {/* Table Header Strip */}
+            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-[#171715] border-b border-white/10 font-mono text-[10px] text-white/40 uppercase tracking-wider">
+              <div className="col-span-2">RND // STATUS</div>
+              <div className="col-span-5">GRAND PRIX // CIRCUIT</div>
+              <div className="col-span-2 text-center">BLUEPRINT</div>
+              <div className="col-span-3 text-right">DATE // LOCAL TIME</div>
+            </div>
+
+            {filteredGPs.length > 0 ? (
+              <div className="divide-y divide-white/10">
+                {filteredGPs.map((gp, i) => {
+                  const roundNum = schedule.findIndex((g) => g.id === gp.id) + 1;
+                  const formattedRound = String(roundNum > 0 ? roundNum : i + 1).padStart(2, "0");
+                  const isNext = gp.id === nextRaceId;
+                  const isFinished = gp.status === "Finished";
+                  const raceDate = new Date(gp.date);
+
+                  return (
+                    <div
+                      key={gp.id}
+                      ref={(el) => {
+                        rowsRef.current[i] = el;
+                      }}
+                      className={cn(
+                        "group transition-colors font-mono relative overflow-hidden",
+                        isNext ? "bg-[#171715] border-l-4 border-l-[#E8462E]" : "hover:bg-white/[0.04]",
+                        isFinished && "opacity-70 hover:opacity-100"
+                      )}
+                      onMouseEnter={() => {
+                        if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                          setHoveredCircuit(gp.circuit);
+                        }
+                      }}
+                    >
+                      <Link
+                        href={`/schedule/${gp.id}`}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-5 sm:p-6"
+                      >
+                        {/* Round Number & Status */}
+                        <div className="md:col-span-2 flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "font-display font-black text-3xl sm:text-4xl tabular-nums tracking-tight",
+                              isNext ? "text-[#E8462E]" : isFinished ? "text-white/30" : "text-white/60 group-hover:text-white"
+                            )}
+                          >
+                            {formattedRound}
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={cn(
+                                "text-[9px] px-1.5 py-0.5 border font-bold uppercase tracking-wider w-fit",
+                                isNext
+                                  ? "border-[#E8462E] bg-[#E8462E] text-white"
+                                  : isFinished
+                                  ? "border-white/10 text-white/40"
+                                  : "border-white/20 text-white/80"
+                              )}
+                            >
+                              {isNext ? "NEXT UP" : gp.status}
+                            </span>
+                            {gp.isSprintWeekend && (
+                              <span className="text-[9px] text-[#E8462E] border border-[#E8462E]/40 px-1 font-bold uppercase w-fit">
+                                SPRINT
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Grand Prix & Circuit */}
+                        <div className="md:col-span-5 min-w-0">
+                          <h3
+                            className={cn(
+                              "font-display font-bold text-xl sm:text-2xl uppercase tracking-wide truncate transition-colors",
+                              isNext ? "text-[#E8462E]" : "text-white group-hover:text-[#E8462E]"
+                            )}
+                          >
+                            {gp.name.replace("Grand Prix", "").trim()} GP
+                          </h3>
+                          <p className="text-xs text-white/50 truncate uppercase mt-0.5">
+                            {gp.circuit} • {gp.country}
+                          </p>
+                        </div>
+
+                        {/* Circuit SVG line art */}
+                        <div className="hidden md:flex md:col-span-2 items-center justify-center text-white/30 group-hover:text-[#E8462E] transition-colors">
+                          <CircuitSvg name={`${gp.circuit} ${gp.country}`} className="w-16 h-10" />
+                        </div>
+
+                        {/* Date & Action */}
+                        <div className="md:col-span-3 flex flex-col md:items-end justify-center text-left md:text-right">
+                          <span className="text-sm font-bold text-white uppercase tabular-nums">
+                            {format(raceDate, "dd MMM yyyy")}
+                          </span>
+                          <span className="text-xs text-white/50 tabular-nums">
+                            RACE: {format(raceDate, "HH:mm")} LOCAL
+                          </span>
+                          <span className="text-[10px] text-[#E8462E] font-bold uppercase tracking-wider mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            INSPECT 3D TELEMETRY →
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-12 text-center font-mono text-xs text-white/40 uppercase tracking-widest">
+                NO GRAND PRIX EVENTS FOUND MATCHING SEARCH.
+              </div>
             )}
           </div>
-        </motion.div>
-        
-        {/* Search */}
-        <div className="relative w-64 hidden md:block">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-race-gray/40 backdrop-blur-md border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-race-accent transition-colors"
-          />
-        </div>
+        )}
+
       </div>
 
-      {/* States: Loading, Error */}
-      {isLoading && (
-        <div className="flex flex-col gap-2">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="w-full h-20 rounded-xl opacity-20" />
-          ))}
-        </div>
-      )}
-
-      {isError && (
-        <div className="flex flex-col items-center justify-center py-20 bg-race-gray/20 rounded-2xl border border-race-accent/20">
-          <AlertTriangle className="w-12 h-12 text-race-accent mb-4" />
-          <h3 className="text-2xl font-display uppercase tracking-widest text-white mb-2">Failed to load schedule</h3>
-          <button onClick={() => refetch()} className="flex items-center gap-2 px-6 py-3 bg-race-accent text-black font-bold uppercase tracking-widest rounded-full hover:bg-white transition-colors mt-6">
-            <RefreshCcw className="w-4 h-4" /> Retry
-          </button>
-        </div>
-      )}
-
-      {/* Data Layout: 3 Columns Full Width */}
-      {!isLoading && !isError && (
-        <div className="w-full flex flex-col mt-4">
-          
-          {/* Header Row */}
-          <div className="grid grid-cols-12 gap-4 pb-4 border-b border-white/20 text-[10px] font-bold uppercase tracking-widest text-white/40 px-6">
-            <div className="col-span-2 md:col-span-1">Round</div>
-            <div className="col-span-6 md:col-span-7">Location</div>
-            <div className="col-span-4 text-right">When</div>
-          </div>
-
-          <div className="flex flex-col" onMouseLeave={() => setHoveredCircuit(null)}>
-            <AnimatePresence>
-              {filteredGPs.map((gp, i) => {
-                const isFinished = gp.status === "Finished";
-                const isOngoing = gp.status === "Ongoing";
-                const isUpcoming = gp.status === "Upcoming";
-                const roundNum = String(i + 1).padStart(2, '0');
-                
-                // The "Next Race" is the first one that is Ongoing or Upcoming
-                const isNextRace = (isOngoing || isUpcoming) && !filteredGPs.slice(0, i).some(r => r.status === "Ongoing" || r.status === "Upcoming");
-                
-                return (
-                  <motion.div
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: false, margin: "0px 0px -50px 0px" }}
-                    variants={{
-                      hidden: {},
-                      visible: { transition: { staggerChildren: 0.1 } }
-                    }}
-                    key={gp.id}
-                    className={cn(
-                      "block group border-b border-white/5 transition-colors duration-300 relative overflow-hidden",
-                      isNextRace ? "bg-race-gray-2" : "hover:bg-white/[0.03]"
-                    )}
-                    onMouseEnter={() => {
-                      if (typeof window !== "undefined" && window.innerWidth >= 768) {
-                        setHoveredCircuit(gp.circuit);
-                      }
-                    }}
-                    onClick={() => {
-                      if (typeof window !== "undefined" && window.innerWidth >= 768) {
-                        setHoveredCircuit(gp.circuit);
-                      }
-                    }}
-                  >
-                    <Link href={`/schedule/${gp.id}`} className="grid grid-cols-12 gap-4 items-center py-5 px-6 cursor-pointer relative z-10">
-                      
-                      {/* 1. ROUND (SLIDES FROM LEFT) */}
-                      <motion.div 
-                        variants={{
-                          hidden: { opacity: 0, x: -40 },
-                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
-                        }}
-                        className="col-span-2 md:col-span-1 flex items-center relative w-fit"
-                      >
-                        <span className={cn(
-                          "text-2xl md:text-4xl font-display font-bold transition-colors",
-                          isFinished ? "text-white/20" : isNextRace ? "text-race-accent" : "text-white/50",
-                        )}>
-                          {roundNum}
-                        </span>
-                        {isFinished && (
-                          <span className="absolute inset-0 w-[120%] h-[2px] bg-race-accent top-1/2 -translate-y-1/2 -rotate-12 -left-[10%]" />
-                        )}
-                      </motion.div>
-
-                      {/* 2. LOCATION (SLIDES FROM RIGHT) */}
-                      <motion.div 
-                        variants={{
-                          hidden: { opacity: 0, x: 40 },
-                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
-                        }}
-                        className="col-span-6 md:col-span-7 flex flex-col md:flex-row md:items-center gap-2 md:gap-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <h3 className={cn(
-                            "text-xl md:text-3xl font-display uppercase tracking-widest leading-none truncate transition-colors",
-                            isFinished ? "text-white/20" : isNextRace ? "text-race-accent drop-shadow-[0_0_10px_rgba(212,255,0,0.3)]" : "text-white",
-                          )}>
-                            {gp.country}
-                          </h3>
-                          {getCountryCode(gp.country) !== "un" ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img 
-                              src={`https://flagcdn.com/w40/${getCountryCode(gp.country)}.png`} 
-                              alt={`${gp.country} flag`}
-                              className="w-8 md:w-10 rounded-sm object-cover shadow-lg border border-white/10"
-                            />
-                          ) : (
-                            <span className="text-xl md:text-2xl leading-none">🏁</span>
-                          )}
-                        </div>
-                        
-                        {gp.isSprintWeekend && (
-                          <span className="inline-block w-fit text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-race-accent/20 text-race-accent border border-race-accent/20">
-                            Sprint
-                          </span>
-                        )}
-                      </motion.div>
-
-                      {/* 3. WHEN (SLIDES FROM RIGHT, SLIGHTLY DELAYED) */}
-                      <motion.div 
-                        variants={{
-                          hidden: { opacity: 0, x: 40 },
-                          visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
-                        }}
-                        className="col-span-4 flex flex-col justify-center items-end text-right"
-                      >
-                        <span className={cn(
-                          "text-sm md:text-xl font-display uppercase tracking-widest transition-colors",
-                          isFinished ? "text-white/20" : isNextRace ? "text-race-accent" : "text-white/80"
-                        )}>
-                          {format(new Date(gp.date), "dd MMM yyyy")}
-                        </span>
-                        {isNextRace && (
-                          <span className="text-[10px] text-race-accent font-bold uppercase tracking-widest animate-pulse mt-1">
-                            Up Next
-                          </span>
-                        )}
-                      </motion.div>
-
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </div>
-      )}
-
-      {!isLoading && !isError && filteredGPs.length === 0 && (
-        <div className="text-center py-20 text-white/40 font-bold uppercase tracking-widest">
-          No Grand Prix found matching your search.
-        </div>
-      )}
-
-      {/* FLOATING TRACK PREVIEW MODAL */}
+      {/* FLOATING 3D TRACK PREVIEW MODAL ON HOVER */}
       <AnimatePresence>
         {hoveredCircuit && activeGP && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed z-50 pointer-events-none md:pointer-events-auto shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+            className="fixed z-50 pointer-events-none hidden md:block shadow-[0_25px_60px_rgba(0,0,0,0.9)]"
             style={{
-              // Center on mobile, follow cursor on desktop
-              left: typeof window !== 'undefined' && window.innerWidth < 768 ? '50%' : mousePos.x + 30,
-              top: typeof window !== 'undefined' && window.innerWidth < 768 ? '50%' : mousePos.y + 30,
-              transform: typeof window !== 'undefined' && window.innerWidth < 768 ? 'translate(-50%, -50%)' : 'none'
+              left: mousePos.x + 28,
+              top: mousePos.y - 120,
             }}
           >
-            <div className="w-[300px] h-[350px] bg-gradient-to-b from-race-gray-2 to-[#1a2600] border border-race-accent rounded-2xl overflow-hidden flex flex-col relative group">
-              {/* Close button for mobile tap */}
-              <button 
-                className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/50 rounded-full md:hidden flex items-center justify-center text-white"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setHoveredCircuit(null);
-                }}
-              >
-                ×
-              </button>
-              
-              <div className="p-4 z-10 bg-black/40 backdrop-blur-sm border-b border-white/10">
-                <h4 className="text-race-accent font-display uppercase tracking-widest text-lg leading-none mb-1">
+            <div className="w-[320px] h-[360px] bg-[#171715] border border-white/20 overflow-hidden flex flex-col relative">
+              <div className="p-4 z-10 bg-[#0D0D0C]/80 border-b border-white/10 font-mono">
+                <div className="text-[10px] text-[#E8462E] font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-[#E8462E]" />
+                  3D CIRCUIT TELEMETRY
+                </div>
+                <h4 className="text-white font-display uppercase tracking-wide text-lg leading-tight truncate">
                   {activeGP.name}
                 </h4>
-                <div className="flex justify-between text-[10px] font-bold text-white/60 uppercase tracking-widest">
-                  <span>{activeGP.laps || 52} Laps</span>
-                  <span>{activeGP.distance || 306.3} KM</span>
+                <div className="flex justify-between text-[10px] text-white/50 uppercase mt-1 tabular-nums">
+                  <span>{activeGP.laps || 52} LAPS</span>
+                  <span>{activeGP.length || "5.000"} KM</span>
+                  <span>{activeGP.distance || "306.3"} KM</span>
                 </div>
               </div>
-              
-              <div className="flex-1 relative cursor-grab active:cursor-grabbing pointer-events-auto">
-                {/* 3D Track */}
+
+              <div className="flex-1 relative">
                 <TrackMap key={activeGP.circuit} circuitName={activeGP.circuit} />
+              </div>
+
+              <div className="px-4 py-2 bg-[#0D0D0C] border-t border-white/10 font-mono text-[9px] text-white/40 uppercase flex justify-between">
+                <span>INTERACTIVE 3D MAPPING</span>
+                <span className="text-[#E8462E]">CLICK TO OPEN HUB</span>
               </div>
             </div>
           </motion.div>

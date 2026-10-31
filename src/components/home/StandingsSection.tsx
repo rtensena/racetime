@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { useState, useMemo, useRef } from "react";
+import { useDriverStandings, useConstructorStandings } from "@/hooks/useF1Data";
+import { DriverStanding, ConstructorStanding } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { cn } from "@/lib/utils";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -14,239 +12,356 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
 
+const teamColors: Record<string, string> = {
+  "red bull": "#3671C6",
+  "ferrari": "#E8002D",
+  "mclaren": "#FF8000",
+  "mercedes": "#27F4D2",
+  "aston martin": "#229971",
+  "alpine": "#0093CC",
+  "williams": "#64C4FF",
+  "rb": "#6692FF",
+  "racing bulls": "#6692FF",
+  "sauber": "#52E252",
+  "kick sauber": "#52E252",
+  "haas": "#B6BABD",
+  "audi": "#52E252",
+};
+
+function getTeamColor(teamName: string = ""): string {
+  const clean = teamName.toLowerCase();
+  for (const [key, color] of Object.entries(teamColors)) {
+    if (clean.includes(key)) return color;
+  }
+  return "#78766F";
+}
+
 export function StandingsSection() {
-  const [tab, setTab] = useState<"drivers" | "constructors">("drivers");
-  const [season, setSeason] = useState("2026");
-  
+  const [category, setCategory] = useState<"DRIVERS" | "CONSTRUCTORS">("DRIVERS");
+
   const containerRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  const { data: drivers, isLoading: isLoadingDrivers, isError: isErrorDrivers, dataUpdatedAt: driversUpdatedAt } = useQuery({
-    queryKey: ["standings", "drivers", season],
-    queryFn: () => api.getDriverStandings(season),
-    refetchInterval: 60 * 1000
-  });
-  
-  const { data: constructors, isLoading: isLoadingConstructors, isError: isErrorConstructors, dataUpdatedAt: constructorsUpdatedAt } = useQuery({
-    queryKey: ["standings", "constructors", season],
-    queryFn: () => api.getConstructorStandings(season),
-    refetchInterval: 60 * 1000
-  });
+  // 100% Real-time dynamic fetch of current season standings from free Ergast API
+  const {
+    data: drivers = [],
+    isLoading: isLoadingDrivers,
+    isError: isErrorDrivers,
+    refetch: refetchDrivers,
+    dataUpdatedAt: driversUpdatedAt,
+  } = useDriverStandings("current");
 
-  const isLoading = tab === "drivers" ? isLoadingDrivers : isLoadingConstructors;
-  const isError = tab === "drivers" ? isErrorDrivers : isErrorConstructors;
-  const lastUpdated = tab === "drivers" ? driversUpdatedAt : constructorsUpdatedAt;
+  const {
+    data: constructors = [],
+    isLoading: isLoadingConstructors,
+    isError: isErrorConstructors,
+    refetch: refetchConstructors,
+    dataUpdatedAt: constructorsUpdatedAt,
+  } = useConstructorStandings("current");
 
-  const sharpTransition = { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
+  const isLoading = category === "DRIVERS" ? isLoadingDrivers : isLoadingConstructors;
+  const isError = category === "DRIVERS" ? isErrorDrivers : isErrorConstructors;
+  const lastUpdated = category === "DRIVERS" ? driversUpdatedAt : constructorsUpdatedAt;
 
-  // Force ScrollTrigger and Lenis to refresh when DOM height changes (after data load)
-  useEffect(() => {
-    if (!isLoading) {
-      setTimeout(() => {
-        if (typeof window !== "undefined") {
-          ScrollTrigger.refresh();
-        }
-      }, 100);
-    }
-  }, [isLoading, drivers, constructors]);
+  const currentYear = new Date().getFullYear();
+  const driverLeaderPoints = drivers[0]?.points || 0;
+  const constructorLeaderPoints = constructors[0]?.points || 0;
 
+  // Entrance motion
   useGSAP(() => {
     const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (isReducedMotion) return;
 
-    // Removed pinning to allow natural page scroll
-
-    // Scrub header opacity/y
-    gsap.fromTo(headerRef.current,
-      { opacity: 0, y: -50 },
+    gsap.fromTo(
+      headerRef.current,
+      { opacity: 0, y: 30 },
       {
         opacity: 1,
         y: 0,
-        ease: "none",
+        duration: 0.8,
+        ease: "power2.out",
         scrollTrigger: {
           trigger: containerRef.current,
-          start: "top 80%",
-          end: "top 20%",
-          scrub: true,
-        }
+          start: "top 85%",
+        },
       }
     );
 
-    // Scrub list elements from bottom
-    gsap.fromTo(listRef.current,
-      { opacity: 0, y: 100 },
+    gsap.fromTo(
+      tableRef.current,
+      { opacity: 0, y: 40 },
       {
         opacity: 1,
         y: 0,
-        ease: "none",
+        duration: 0.8,
+        ease: "power2.out",
         scrollTrigger: {
           trigger: containerRef.current,
-          start: "top 60%",
-          end: "top 10%",
-          scrub: true,
-        }
+          start: "top 75%",
+        },
       }
     );
   }, { scope: containerRef });
 
   return (
-    <section id="standings" ref={containerRef} className="container mx-auto px-4 md:px-8 py-12 md:py-16 max-w-4xl flex flex-col justify-center">
-      <div ref={headerRef} className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 opacity-0">
-        <div>
-          <h2 className="text-4xl md:text-5xl font-display uppercase tracking-widest mb-3">
-            World <span className="text-race-accent">Championship</span>
-          </h2>
-          <div className="flex flex-col gap-1">
-            <p className="text-white/60 font-sans text-sm md:text-base uppercase tracking-wider font-medium max-w-2xl">
-              Live Season Standings
-            </p>
-            {lastUpdated > 0 && (
-              <p className="text-[10px] text-race-accent font-bold uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-race-accent animate-pulse" />
-                Live: Last synced {new Date(lastUpdated).toLocaleTimeString()}
-              </p>
-            )}
+    <section
+      id="standings"
+      ref={containerRef}
+      className="relative w-full bg-[#0D0D0C]/85 backdrop-blur-sm text-[#E8E6E1] py-20 md:py-28 border-b border-white/10"
+    >
+      <span id="drivers" className="relative -top-24 block" />
+
+      <div className="max-w-[80rem] mx-auto px-4 md:px-8">
+        
+        {/* Header Block */}
+        <div ref={headerRef} className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-6 mb-10 gap-6">
+          <div>
+            <div className="font-mono text-xs text-[#E8462E] uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#E8462E] animate-pulse" />
+              LIVE {currentYear} WORLD CHAMPIONSHIP CLASSIFICATION
+            </div>
+            <h2 className="font-display font-black text-4xl sm:text-6xl uppercase tracking-tight text-white leading-none">
+              WORLD <span className="text-[#E8462E]">STANDINGS</span>
+            </h2>
+            <div className="flex items-center gap-3 font-mono text-xs text-white/50 mt-2">
+              <span>REAL-TIME ERGAST MOTORSPORT API</span>
+              <span>•</span>
+              <span>AUTO-SYNCHRONIZED</span>
+              {lastUpdated > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-[#22C55E]">LAST SYNC: {new Date(lastUpdated).toLocaleTimeString()}</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Drivers / Constructors Segmented Toggle */}
+          <div className="flex border border-white/15 bg-[#171715] font-mono text-xs">
+            {(["DRIVERS", "CONSTRUCTORS"] as const).map((cat) => {
+              const isSelected = category === cat;
+              return (
+                <button
+                  key={cat}
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => setCategory(cat)}
+                  className={`px-5 py-2.5 uppercase tracking-wider font-bold transition-colors ${
+                    isSelected
+                      ? "bg-[#E8462E] text-white"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <select
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-            className="bg-race-gray/80 backdrop-blur-md border border-white/10 rounded-full py-2 px-4 text-white focus:outline-none focus:border-race-accent transition-colors appearance-none cursor-pointer text-xs font-bold uppercase tracking-widest relative z-20"
-          >
-            <option value="2026">2026 Season</option>
-            <option value="2025">2025 Season</option>
-            <option value="2024">2024 Season</option>
-          </select>
-
-          {/* Tabs */}
-          <div className="flex bg-race-gray/80 backdrop-blur-md p-1 rounded-full border border-white/10 w-fit relative z-20">
-            {['drivers', 'constructors'].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t as any)}
-                className={cn(
-                  "relative z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-colors duration-300",
-                  tab === t ? "text-black" : "text-white/60 hover:text-white"
-                )}
-              >
-                {t === "drivers" ? "Drivers" : "Constructors"}
-                {tab === t && (
-                  <motion.div
-                    layoutId="activeTabPill"
-                    className="absolute inset-0 bg-race-accent rounded-full -z-10"
-                    transition={sharpTransition}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div ref={listRef} className="relative pr-4 opacity-0 pb-12">
+        {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="w-full h-16 rounded-xl border border-white/5" />
+          <div className="border border-white/10 bg-[#171715] p-6 space-y-3 font-mono animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-12 bg-white/5 w-full" />
             ))}
           </div>
         )}
 
+        {/* Error State */}
         {isError && (
-          <div className="py-20 text-center text-race-accent font-bold uppercase tracking-widest bg-race-gray/30 rounded-xl border border-white/10">
-            Failed to load standings.
+          <div className="border border-[#E8462E] bg-[#171715] p-8 text-center font-mono">
+            <span className="text-[#E8462E] text-xs font-bold uppercase tracking-widest block mb-2">
+              LIVE TELEMETRY FEED TEMPORARILY BUSY
+            </span>
+            <p className="text-sm text-white/50 mb-4">
+              Connecting to Ergast F1 server...
+            </p>
+            <button
+              onClick={() => (category === "DRIVERS" ? refetchDrivers() : refetchConstructors())}
+              className="border border-[#E8462E] text-[#E8462E] hover:bg-[#E8462E] hover:text-white px-5 py-2.5 text-xs font-bold uppercase transition-colors"
+            >
+              RETRY TELEMETRY FETCH
+            </button>
           </div>
         )}
 
+        {/* Live Timing Tower Table */}
         {!isLoading && !isError && (
-          <AnimatePresence mode="wait" custom={tab}>
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, x: tab === "drivers" ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: tab === "drivers" ? 20 : -20 }}
-              transition={sharpTransition}
-              className="flex flex-col gap-2"
-            >
-              <AnimatePresence>
-                {tab === "drivers" && drivers && drivers.map((driver, index) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ 
-                      opacity: { duration: 0.2 },
-                      layout: { type: "spring", stiffness: 200, damping: 20 },
-                      delay: index * 0.05
-                    }}
-                    key={driver.driverId}
-                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-3 md:p-4 hover:shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-race-accent/40 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 text-center text-2xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
-                      {driver.position}
-                    </div>
+          <div ref={tableRef} className="border border-white/10 bg-[#0D0D0C] overflow-x-auto shadow-2xl">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={category}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.25 }}
+              >
+                {category === "DRIVERS" ? (
+                  <table className="w-full text-left font-mono border-collapse" aria-label="Drivers Championship Standings">
+                    <thead>
+                      <tr className="bg-[#171715] border-b border-white/10 text-[10px] text-white/40 uppercase tracking-wider">
+                        <th scope="col" className="py-3.5 px-4 w-14 text-center">POS</th>
+                        <th scope="col" className="py-3.5 px-1 w-2 text-center" aria-label="Team Colour" />
+                        <th scope="col" className="py-3.5 px-3 w-16">CODE</th>
+                        <th scope="col" className="py-3.5 px-4">DRIVER / CONSTRUCTOR</th>
+                        <th scope="col" className="py-3.5 px-4 text-right">POINTS</th>
+                        <th scope="col" className="py-3.5 px-4 text-right hidden sm:table-cell">GAP</th>
+                        <th scope="col" className="py-3.5 px-4 text-right hidden md:table-cell">WINS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {drivers.map((d, idx) => {
+                        const pos = d.position || idx + 1;
+                        const code = d.code || d.lastName?.slice(0, 3).toUpperCase() || "DRV";
+                        const color = getTeamColor(d.team);
+                        const gap = pos === 1 ? "LEADER" : `-${(driverLeaderPoints - d.points).toFixed(0)}`;
+                        const isLeader = pos === 1;
 
-                    <div className="flex-1 ml-6">
-                      <p className="text-xs font-bold uppercase tracking-widest text-white/60 group-hover:text-white/80 transition-colors">
-                        {driver.firstName}
-                      </p>
-                      <p className="text-lg md:text-xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
-                        {driver.lastName}
-                      </p>
-                      <p className="text-[10px] font-medium uppercase tracking-widest text-white/40 mt-0.5">
-                        {driver.team}
-                      </p>
-                    </div>
+                        return (
+                          <tr
+                            key={d.driverId || idx}
+                            className={`hover:bg-white/[0.04] transition-colors ${
+                              isLeader ? "bg-[#171715]/70" : ""
+                            }`}
+                          >
+                            <td className="py-4 px-4 text-center tabular-nums">
+                              <span
+                                className={`font-display font-black text-xl sm:text-2xl leading-none ${
+                                  isLeader ? "text-[#E8462E]" : pos <= 3 ? "text-white" : "text-white/40"
+                                }`}
+                              >
+                                {String(pos).padStart(2, "0")}
+                              </span>
+                            </td>
 
-                    <div className="text-right flex items-baseline gap-2">
-                      <p className="text-2xl md:text-3xl font-display text-white group-hover:scale-105 origin-right transition-transform">
-                        {driver.points} 
-                      </p>
-                      <span className="text-xs text-white/40 uppercase tracking-widest font-bold">PTS</span>
-                    </div>
-                  </motion.div>
-                ))}
+                            <td className="py-4 px-1 text-center">
+                              <span
+                                className="inline-block w-1.5 h-8"
+                                style={{ backgroundColor: color }}
+                                title={d.team}
+                              />
+                            </td>
 
-                {tab === "constructors" && constructors && constructors.map((constructor, index) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ 
-                      opacity: { duration: 0.2 },
-                      layout: { type: "spring", stiffness: 200, damping: 20 },
-                      delay: index * 0.05
-                    }}
-                    key={constructor.teamId}
-                    className="flex items-center bg-race-gray/40 border border-white/5 rounded-xl p-3 md:p-4 hover:shadow-[0_0_20px_rgba(212,255,0,0.15)] hover:border-race-accent/40 transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 text-center text-2xl font-display text-white/20 group-hover:text-race-accent group-hover:scale-110 transition-all duration-300 transform-gpu">
-                      {constructor.position}
-                    </div>
+                            <td className="py-4 px-3 font-bold text-xs sm:text-sm text-white">
+                              <span className="border border-white/15 bg-[#171715] px-2 py-0.5 inline-block text-[11px] font-bold">
+                                {code}
+                              </span>
+                            </td>
 
-                    <div className="flex-1 ml-6">
-                      <p className="text-lg md:text-xl font-display uppercase tracking-wider text-white group-hover:text-race-accent transition-colors">
-                        {constructor.name}
-                      </p>
-                    </div>
+                            <td className="py-4 px-4 min-w-[160px]">
+                              <div className="flex flex-col">
+                                <span className="font-display font-bold text-lg sm:text-xl uppercase text-white leading-tight">
+                                  <span className="text-white/40 font-normal mr-1">{d.firstName}</span>
+                                  {d.lastName}
+                                </span>
+                                <span className="text-xs text-white/50 uppercase mt-0.5">
+                                  {d.team}
+                                </span>
+                              </div>
+                            </td>
 
-                    <div className="text-right flex items-baseline gap-2">
-                      <p className="text-2xl md:text-3xl font-display text-white group-hover:scale-105 origin-right transition-transform">
-                        {constructor.points} 
-                      </p>
-                      <span className="text-xs text-white/40 uppercase tracking-widest font-bold">PTS</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          </AnimatePresence>
+                            <td className="py-4 px-4 text-right tabular-nums">
+                              <span className="font-display font-black text-2xl sm:text-3xl text-white">
+                                {d.points}
+                              </span>
+                              <span className="text-[10px] text-white/40 block sm:hidden">PTS</span>
+                            </td>
+
+                            <td className="py-4 px-4 text-right text-xs tabular-nums text-white/50 hidden sm:table-cell">
+                              {gap}
+                            </td>
+
+                            <td className="py-4 px-4 text-right text-xs tabular-nums text-white/50 hidden md:table-cell">
+                              {d.wins > 0 ? (
+                                <span className="text-white font-bold">{d.wins}</span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="w-full text-left font-mono border-collapse" aria-label="Constructors Championship Standings">
+                    <thead>
+                      <tr className="bg-[#171715] border-b border-white/10 text-[10px] text-white/40 uppercase tracking-wider">
+                        <th scope="col" className="py-3.5 px-4 w-14 text-center">POS</th>
+                        <th scope="col" className="py-3.5 px-1 w-2 text-center" aria-label="Team Colour" />
+                        <th scope="col" className="py-3.5 px-4">CONSTRUCTOR</th>
+                        <th scope="col" className="py-3.5 px-4 text-right">POINTS</th>
+                        <th scope="col" className="py-3.5 px-4 text-right hidden sm:table-cell">GAP</th>
+                        <th scope="col" className="py-3.5 px-4 text-right hidden md:table-cell">WINS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {constructors.map((c, idx) => {
+                        const pos = c.position || idx + 1;
+                        const color = getTeamColor(c.name);
+                        const gap = pos === 1 ? "LEADER" : `-${(constructorLeaderPoints - c.points).toFixed(0)}`;
+
+                        return (
+                          <tr
+                            key={c.teamId || idx}
+                            className={`hover:bg-white/[0.04] transition-colors ${
+                              pos === 1 ? "bg-[#171715]/70" : ""
+                            }`}
+                          >
+                            <td className="py-4 px-4 text-center tabular-nums">
+                              <span
+                                className={`font-display font-black text-xl sm:text-2xl leading-none ${
+                                  pos === 1 ? "text-[#E8462E]" : "text-white/40"
+                                }`}
+                              >
+                                {String(pos).padStart(2, "0")}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-1 text-center">
+                              <span
+                                className="inline-block w-1.5 h-8"
+                                style={{ backgroundColor: color }}
+                                title={c.name}
+                              />
+                            </td>
+
+                            <td className="py-4 px-4">
+                              <span className="font-display font-bold text-lg sm:text-2xl uppercase text-white">
+                                {c.name}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-4 text-right tabular-nums">
+                              <span className="font-display font-black text-2xl sm:text-3xl text-white">
+                                {c.points}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-4 text-right text-xs tabular-nums text-white/50 hidden sm:table-cell">
+                              {gap}
+                            </td>
+
+                            <td className="py-4 px-4 text-right text-xs tabular-nums text-white/50 hidden md:table-cell">
+                              {c.wins > 0 ? (
+                                <span className="text-white font-bold">{c.wins}</span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         )}
+
       </div>
     </section>
   );

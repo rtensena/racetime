@@ -15,7 +15,7 @@ export type GrandPrix = {
   sessions: Session[];
   status: "Upcoming" | "Ongoing" | "Finished";
   
-  // New detailed fields
+  // Detailed fields
   length?: string;
   distance?: string;
   laps?: number;
@@ -26,12 +26,13 @@ export type GrandPrix = {
 export type DriverStanding = {
   position: number;
   driverId: string;
+  code?: string;
   firstName: string;
   lastName: string;
   team: string;
   points: number;
   wins: number;
-  positionChange: number; // Positive means moved up, negative down
+  positionChange: number;
 };
 
 export type ConstructorStanding = {

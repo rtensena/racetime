@@ -4,12 +4,6 @@ import { mockGrandPrix } from "@/lib/mockData";
 
 // Base URLs
 const OPEN_F1_API = "https://api.openf1.org/v1";
-const BALL_DONT_LIE_API = "https://api.balldontlie.io/f1/v1"; // Using hypothetical endpoint based on user instruction
-
-// Note: In a real app, API keys should be in .env.local
-const BDL_HEADERS = {
-  // Authorization: `Bearer ${process.env.NEXT_PUBLIC_BDL_API_KEY}`
-};
 
 export const api = {
   // --- Events / Schedule ---
@@ -22,7 +16,6 @@ export const api = {
       
       return races.map((r: any) => {
         const raceDate = new Date(`${r.date}T${r.time || '15:00:00Z'}`);
-        // Simple status calculation
         let status: "Upcoming" | "Ongoing" | "Finished" = "Upcoming";
         const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
         
@@ -34,14 +27,13 @@ export const api = {
 
         const sessions: any[] = [];
         
-        // Helper to safely add session
         const addSession = (name: string, sessionObj: any) => {
           if (sessionObj) {
             sessions.push({
               id: `${r.round}-${name.replace(/\s+/g, '')}`,
               name: name,
               date: `${sessionObj.date}T${sessionObj.time || '00:00:00Z'}`,
-              status: "Upcoming" // This will be refined later based on current time
+              status: "Upcoming"
             });
           }
         };
@@ -53,21 +45,17 @@ export const api = {
         addSession("Sprint Qualifying", r.SprintQualifying || r.SprintShootout);
         addSession("Sprint", r.Sprint);
         
-        // Add the main race
         sessions.push({
           id: `${r.round}-Race`,
           name: "Race",
           date: `${r.date}T${r.time || '00:00:00Z'}`,
-          status: status // Main race status matches overall status (roughly)
+          status: status
         });
 
-        // Sort sessions chronologically
         sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-        // Update session status dynamically
         sessions.forEach(s => {
           const sDate = new Date(s.date);
-          // Assuming each session lasts ~2 hours
           if (now.getTime() > sDate.getTime() + 2 * 60 * 60 * 1000) {
             s.status = "Finished";
           } else if (now.getTime() >= sDate.getTime()) {
@@ -77,7 +65,6 @@ export const api = {
           }
         });
 
-        // Merge with mockData to get factual length, distance, laps
         const factualData = mockGrandPrix.find(m => m.circuit === r.Circuit.circuitName || m.country === r.Circuit.Location.country);
 
         return {
@@ -101,14 +88,13 @@ export const api = {
   },
 
   getEventDetails: async (eventId: string): Promise<GrandPrix> => {
-    // We can fetch schedule and find it
-    const schedule = await api.getSchedule();
+    const schedule = await api.getSchedule("current");
     const gp = schedule.find(g => g.id === eventId);
     if (!gp) throw new Error("Event not found");
     return gp;
   },
 
-  // --- Standings ---
+  // --- Standings (100% Real-time dynamic from API) ---
   getDriverStandings: async (season: string = "current"): Promise<DriverStanding[]> => {
     try {
       const response = await axios.get(`https://api.jolpi.ca/ergast/f1/${season}/driverStandings.json`);
@@ -119,6 +105,7 @@ export const api = {
       return standingsLists[0].DriverStandings.map((d: any) => ({
         position: parseInt(d.position),
         driverId: d.Driver.driverId,
+        code: d.Driver.code || d.Driver.familyName?.slice(0, 3).toUpperCase() || "DRV",
         firstName: d.Driver.givenName,
         lastName: d.Driver.familyName,
         team: d.Constructors[0]?.name || "Unknown",
@@ -155,7 +142,6 @@ export const api = {
 
   // --- Live Data ---
   getLiveTelemetry: async (sessionKey: string) => {
-    // OpenF1 is real-time, leaving this untouched
     const response = await axios.get(`${OPEN_F1_API}/car_data?session_key=${sessionKey}`);
     return response.data;
   }

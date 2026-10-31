@@ -1,40 +1,81 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useSchedule } from "@/hooks/useF1Data";
 import { mockGrandPrix } from "@/lib/mockData";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { GrandPrix } from "@/lib/types";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 export function HeroCountdown() {
-  const nextGp = mockGrandPrix.find((gp) => gp.status === "Upcoming" || gp.status === "Ongoing") || mockGrandPrix[0];
-  const [timeLeft, setTimeLeft] = useState({ d: "00", h: "00", m: "00", s: "00" });
-  const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
+  const [isClient, setIsClient] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+
+  const { data: schedule } = useSchedule("current");
+
   useEffect(() => {
     setIsClient(true);
-    const target = new Date(nextGp.date).getTime();
-
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const diff = Math.max((target - now) / 1000, 0);
-
-      const d = String(Math.floor(diff / (3600 * 24))).padStart(2, "0");
-      const h = String(Math.floor((diff % (3600 * 24)) / 3600)).padStart(2, "0");
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
-      const s = String(Math.floor(diff % 60)).padStart(2, "0");
-
-      setTimeLeft({ d, h, m, s });
-    }, 1000);
-
+    setNow(new Date());
+    const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
-  }, [nextGp]);
+  }, []);
+
+  // Compute next race dynamically from calendar data
+  const { nextRace, isSeasonComplete, roundNumber, totalRounds } = useMemo(() => {
+    const list: GrandPrix[] = schedule && schedule.length > 0 ? schedule : mockGrandPrix;
+    const currentTime = now ? now.getTime() : Date.now();
+
+    const upcomingList = list.filter((gp) => {
+      const raceDate = new Date(gp.date).getTime();
+      return raceDate > currentTime;
+    });
+
+    if (upcomingList.length === 0) {
+      return {
+        nextRace: list[list.length - 1],
+        isSeasonComplete: true,
+        roundNumber: list.length,
+        totalRounds: list.length,
+      };
+    }
+
+    const next = upcomingList[0];
+    const index = list.findIndex((gp) => gp.id === next.id);
+
+    return {
+      nextRace: next,
+      isSeasonComplete: false,
+      roundNumber: index !== -1 ? index + 1 : 1,
+      totalRounds: list.length,
+    };
+  }, [schedule, now]);
+
+  // Tabular Countdown
+  const timeLeft = useMemo(() => {
+    if (!nextRace || !now) {
+      return { d: "00", h: "00", m: "00", s: "00" };
+    }
+    const target = new Date(nextRace.date).getTime();
+    const diff = Math.max(0, Math.floor((target - now.getTime()) / 1000));
+
+    const d = String(Math.floor(diff / 86400)).padStart(2, "0");
+    const h = String(Math.floor((diff % 86400) / 3600)).padStart(2, "0");
+    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+    const s = String(diff % 60).padStart(2, "0");
+
+    return { d, h, m, s };
+  }, [nextRace, now]);
 
   const timeUnits = [
     { label: "Days", value: timeLeft.d },
@@ -45,29 +86,15 @@ export function HeroCountdown() {
 
   const cinematicEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
-  // GSAP ScrollTrigger for Parallax Depth
+  // GSAP Parallax
   useGSAP(() => {
     const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (isReducedMotion) return;
 
-    // Fast parallax for glow (moves down fast)
-    gsap.to(glowRef.current, {
-      y: 300,
-      opacity: 0,
-      ease: "none",
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-
-    // Medium parallax + fade/scale for text
+    // Parallax text
     gsap.to(textRef.current, {
-      y: 150,
-      scale: 0.9,
-      opacity: 0,
+      y: 100,
+      opacity: 0.3,
       ease: "none",
       scrollTrigger: {
         trigger: containerRef.current,
@@ -77,10 +104,10 @@ export function HeroCountdown() {
       },
     });
 
-    // Slow parallax for the grid
+    // Parallax grid
     gsap.to(gridRef.current, {
       y: 50,
-      opacity: 0,
+      opacity: 0.5,
       ease: "none",
       scrollTrigger: {
         trigger: containerRef.current,
@@ -92,98 +119,160 @@ export function HeroCountdown() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative min-h-[90vh] flex flex-col justify-center overflow-hidden w-full bg-background pt-20 pb-20">
-      
-      {/* Ambient Breathing Glow behind title with Parallax */}
-      <div ref={glowRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full flex justify-center items-center pointer-events-none z-0">
-        <motion.div 
-          animate={{ 
-            opacity: [0.1, 0.3, 0.1],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-race-accent/20 rounded-full blur-[100px]"
-        />
+    <section
+      ref={containerRef}
+      className="relative min-h-[95vh] w-full flex flex-col justify-between overflow-hidden bg-transparent text-[#E8E6E1] pt-24 sm:pt-28 pb-12"
+    >
+      {/* Top Ticker Strip */}
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 font-mono text-xs text-white/60 border-b border-white/10 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-2 text-[#E8462E] font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 bg-[#E8462E] animate-pulse" />
+              LIVE TELEMETRY
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="text-white/80">
+              {isSeasonComplete ? "SEASON COMPLETED" : `ROUND ${roundNumber} OF ${totalRounds}`}
+            </span>
+          </div>
+
+          <div className="tabular-nums text-white/80">
+            {now ? format(now, "HH:mm:ss") + " LOCAL" : "LIVE"}
+          </div>
+        </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-8 relative z-10 flex flex-col items-center text-center">
+      {/* Main Center Content */}
+      <div className="container mx-auto px-4 md:px-8 relative z-10 flex flex-col items-center justify-center text-center my-auto py-4">
         
-        {/* GP Name & Badge */}
-        <div ref={textRef} className="w-full flex flex-col items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
+        {/* Title Block */}
+        <div ref={textRef} className="w-full flex flex-col items-center max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: cinematicEase }}
-            className="mb-12 md:mb-16 flex flex-col items-center w-full"
+            className="flex flex-col items-center w-full"
           >
-            {nextGp.isSprintWeekend && (
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3, type: "spring" }}
-                className="mb-6 bg-race-accent text-black px-4 py-1.5 rounded-full text-xs md:text-sm font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(212,255,0,0.4)]"
-              >
-                Sprint Weekend
-              </motion.div>
-            )}
-            <h1 className="text-5xl md:text-7xl lg:text-[140px] font-display uppercase tracking-widest leading-[0.9] drop-shadow-2xl">
-              {nextGp.name.replace("Grand Prix", "").trim()}
-              <br />
-              <span className="text-race-accent">Grand Prix</span>
+            {/* Eyebrow badge */}
+            <div className="inline-flex items-center gap-2 border border-[#E8462E]/60 bg-[#E8462E]/10 px-3.5 py-1 font-mono text-xs font-bold uppercase tracking-widest text-[#E8462E] mb-6 rounded-full">
+              <span className="w-1.5 h-1.5 bg-[#E8462E]" />
+              PREPARE FOR LIGHTS OUT
+              {nextRace?.isSprintWeekend && (
+                <span className="ml-2 border-l border-[#E8462E]/40 pl-2 text-white">
+                  SPRINT
+                </span>
+              )}
+            </div>
+
+            {/* Giant Grand Prix Headline */}
+            <h1 className="text-5xl sm:text-7xl lg:text-[105px] font-display font-black uppercase tracking-tight leading-[0.88] text-white drop-shadow-2xl mb-4">
+              {nextRace ? (
+                <>
+                  <span>{nextRace.name.replace("Grand Prix", "").trim()}</span>
+                  <br />
+                  <span className="text-[#E8462E]">GRAND PRIX</span>
+                </>
+              ) : (
+                "WORLD CHAMPIONSHIP"
+              )}
             </h1>
-            <p className="mt-8 text-lg md:text-xl font-bold uppercase tracking-widest text-white/60 font-sans">
-              {nextGp.circuit} • {format(new Date(nextGp.date), "dd MMM yyyy")}
-            </p>
+
+            {/* Circuit & Date */}
+            {nextRace && (
+              <p className="font-mono text-xs sm:text-sm uppercase tracking-widest text-white/70 mt-2 mb-10 flex flex-wrap items-center justify-center gap-2">
+                <span className="text-white font-bold">{nextRace.circuit}</span>
+                <span className="text-[#E8462E]">•</span>
+                <span>{nextRace.country}</span>
+                <span className="text-[#E8462E]">•</span>
+                <span className="text-white/90">{format(new Date(nextRace.date), "dd MMMM yyyy")}</span>
+              </p>
+            )}
           </motion.div>
         </div>
 
-        {/* Staggered Countdown */}
-        <div ref={gridRef} className="w-full flex justify-center">
+        {/* Dynamic Countdown Grid with Kinetic 3D Cards */}
+        <div ref={gridRef} className="w-full flex justify-center max-w-4xl">
           {isClient ? (
-            <motion.div 
+            <motion.div
               initial="hidden"
               animate="visible"
               variants={{
-                visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+                visible: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } },
               }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 w-full max-w-5xl perspective-[1200px]"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 w-full perspective-[1000px]"
             >
               {timeUnits.map((unit) => (
                 <motion.div
                   key={unit.label}
                   variants={{
-                    hidden: { opacity: 0, y: 50, rotateX: -45 },
-                    visible: { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.8, ease: cinematicEase } }
+                    hidden: { opacity: 0, y: 40, rotateX: -30 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      rotateX: 0,
+                      transition: { duration: 0.7, ease: cinematicEase },
+                    },
                   }}
-                  className="flex flex-col items-center bg-race-gray-2/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 md:p-8 hover:border-race-accent/40 hover:shadow-[0_20px_40px_rgba(212,255,0,0.1)] transition-all duration-300 transform-gpu origin-bottom group"
+                  className="flex flex-col items-center bg-[#121210]/90 backdrop-blur-md border border-white/10 p-5 sm:p-7 hover:border-[#E8462E]/60 transition-colors shadow-2xl relative group overflow-hidden"
                 >
-                  <div className="relative overflow-hidden h-20 md:h-28 flex items-center justify-center w-full">
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-white/10 group-hover:bg-[#E8462E] transition-colors" />
+
+                  <div className="relative overflow-hidden h-16 sm:h-24 flex items-center justify-center w-full">
                     <AnimatePresence mode="popLayout">
-                      <motion.span 
+                      <motion.span
                         key={unit.value}
-                        initial={{ y: 50, opacity: 0 }}
+                        initial={{ y: 35, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -50, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: cinematicEase }}
-                        className="text-6xl md:text-[90px] font-display tracking-tight text-white group-hover:text-race-accent transition-colors duration-300 absolute"
+                        exit={{ y: -35, opacity: 0 }}
+                        transition={{ duration: 0.35, ease: cinematicEase }}
+                        className="text-5xl sm:text-7xl font-display font-black tracking-tight text-white group-hover:text-[#E8462E] transition-colors tabular-nums absolute"
                       >
                         {unit.value}
                       </motion.span>
                     </AnimatePresence>
                   </div>
-                  <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-white/40 mt-4 md:mt-6 group-hover:text-white/80 transition-colors">
+
+                  <span className="font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white/50 mt-3 group-hover:text-white/80 transition-colors">
                     {unit.label}
                   </span>
                 </motion.div>
               ))}
             </motion.div>
           ) : (
-            <div className="h-40 md:h-56 w-full max-w-5xl" />
+            <div className="h-32 sm:h-44 w-full" />
           )}
         </div>
+
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4 font-mono text-xs"
+        >
+          <a
+            href="#schedule"
+            className="bg-[#E8462E] hover:bg-[#FF5438] text-white px-6 py-3 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg"
+          >
+            <span>RACE CALENDAR</span>
+            <span>↓</span>
+          </a>
+          <a
+            href="#standings"
+            className="border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 text-white px-6 py-3 font-bold uppercase tracking-wider transition-colors backdrop-blur-sm"
+          >
+            WORLD STANDINGS →
+          </a>
+        </motion.div>
+
       </div>
-      
-      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-race-accent to-transparent opacity-30 z-10" />
+
+      {/* Bottom Scroll Indicator */}
+      <div className="relative z-10 flex flex-col items-center justify-center font-mono text-[10px] text-white/40 uppercase tracking-widest">
+        <span>SCROLL TO EXPLORE TELEMETRY</span>
+        <span className="text-[#E8462E] text-xs mt-1 animate-bounce">↓</span>
+      </div>
     </section>
   );
 }

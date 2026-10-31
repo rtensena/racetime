@@ -1,86 +1,157 @@
 "use client";
 
-import { useProgress } from "@react-three/drei";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function GlobalPreloader() {
-  const { progress } = useProgress();
-  const [isLoading, setIsLoading] = useState(true);
+  const [stage, setStage] = useState<number>(0); // 0 to 5 for lights on
+  const [lightsOut, setLightsOut] = useState<boolean>(false);
+  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
-  // Bulletproof fallback: Always close after 3.5 seconds maximum on any device
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setIsLoading(false);
-    }, 3500);
-    return () => clearTimeout(t);
+  const dismiss = useCallback(() => {
+    setIsVisible(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("racetime_preloader_viewed", "true");
+    }
   }, []);
 
-  // Also close if progress hits 100 before 3.5 seconds, but give it a small 500ms delay
   useEffect(() => {
-    if (progress >= 100) {
-      const t = setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-      return () => clearTimeout(t);
+    // Check if user already viewed preloader or prefers reduced motion
+    if (typeof window !== "undefined") {
+      if (sessionStorage.getItem("racetime_preloader_viewed")) {
+        return;
+      }
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        sessionStorage.setItem("racetime_preloader_viewed", "true");
+        return;
+      }
     }
-  }, [progress]);
+
+    setIsVisible(true);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.code === "Space") {
+        dismiss();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Authentic F1 Start Sequence Timing:
+    // 1 red light every 350ms, then a random hold when all 5 are lit (1.0s - 1.4s), then LIGHTS OUT!
+    const t1 = setTimeout(() => setStage(1), 300);
+    const t2 = setTimeout(() => setStage(2), 650);
+    const t3 = setTimeout(() => setStage(3), 1000);
+    const t4 = setTimeout(() => setStage(4), 1350);
+    const t5 = setTimeout(() => setStage(5), 1700);
+
+    // Random hold duration between 800ms and 1300ms
+    const randomHold = 800 + Math.random() * 500;
+    const tOut = setTimeout(() => {
+      setLightsOut(true);
+      setIsRevealed(true);
+      setTimeout(() => {
+        dismiss();
+      }, 400);
+    }, 1700 + randomHold);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      clearTimeout(tOut);
+    };
+  }, [dismiss]);
+
+  if (!isVisible) return null;
 
   return (
     <AnimatePresence>
-      {isLoading && (
-        <motion.div
-          key="global-preloader"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black overflow-hidden"
-        >
-          {/* Animated Background Pulse */}
-          <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute w-[600px] h-[600px] bg-race-accent/20 rounded-full blur-[100px]"
-          />
+      <motion.div
+        key="f1-start-gantry"
+        initial={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.35 }}
+        className="fixed inset-0 z-[9999] bg-[#090908] flex flex-col items-center justify-center p-4 select-none font-mono"
+        onClick={dismiss}
+      >
+        <div className="w-full max-w-lg border border-white/10 bg-[#121210] p-6 sm:p-8 shadow-2xl flex flex-col items-center">
+          
+          {/* Top Race Control Label */}
+          <div className="w-full flex items-center justify-between border-b border-white/10 pb-3 mb-8 text-[10px] text-white/50 uppercase tracking-widest">
+            <span className="flex items-center gap-2 text-[#E8462E] font-bold">
+              <span className="w-2 h-2 bg-[#E8462E] animate-ping" />
+              FIA RACE CONTROL // START PROCEDURE
+            </span>
+            <span>2026 WORLD CHAMPIONSHIP</span>
+          </div>
 
-          <div className="relative z-10 flex flex-col items-center">
-            {/* Looping RaceTime Text */}
-            <div className="flex overflow-hidden relative">
-              <motion.h1
-                animate={{ y: [40, 0, 0, -40], opacity: [0, 1, 1, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="text-5xl md:text-7xl font-display uppercase tracking-[0.2em] text-white"
-              >
-                Race<span className="text-race-accent">Time</span>
-              </motion.h1>
-              
-              {/* Ghost text for trailing effect */}
-              <motion.h1
-                animate={{ y: [40, 0, 0, -40], opacity: [0, 0.3, 0.3, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
-                className="absolute text-5xl md:text-7xl font-display uppercase tracking-[0.2em] text-race-accent/50 blur-sm"
-              >
-                Race<span className="text-white">Time</span>
-              </motion.h1>
-            </div>
-
-            {/* Progress Bar (Optional, subtle) */}
-            <div className="mt-12 w-48 h-[2px] bg-white/10 rounded-full overflow-hidden relative">
-              <motion.div
-                className="absolute top-0 left-0 h-full bg-race-accent"
-                initial={{ width: "0%" }}
-                animate={{ width: `${Math.max(15, progress)}%` }} // Start at 15% to show some progress visually
-                transition={{ ease: "linear", duration: 0.2 }}
-              />
-            </div>
-            
-            <div className="mt-4 text-[10px] font-bold uppercase tracking-widest text-white/40">
-              {progress < 100 ? `Loading Assets... ${Math.round(progress)}%` : 'Starting Engine...'}
+          {/* Authentic F1 Start Lights Gantry Bar */}
+          <div className="w-full bg-[#090908] border-2 border-white/15 p-6 mb-8 shadow-inner">
+            <div className="grid grid-cols-5 gap-3 sm:gap-5 max-w-sm mx-auto">
+              {[1, 2, 3, 4, 5].map((lightIdx) => {
+                const isLit = !lightsOut && stage >= lightIdx;
+                return (
+                  <div key={lightIdx} className="flex flex-col items-center gap-2">
+                    {/* Upper Black Housing */}
+                    <div className="w-11 sm:w-14 h-14 sm:h-16 bg-[#171715] border border-white/10 rounded-sm flex items-center justify-center p-1.5 shadow-md relative">
+                      {/* Red Light Bezel */}
+                      <div
+                        className={`w-full h-full rounded-full transition-all duration-75 flex items-center justify-center ${
+                          isLit
+                            ? "bg-[#E8462E] shadow-[0_0_25px_#E8462E,0_0_50px_rgba(232,70,46,0.8)]"
+                            : "bg-[#251513] border border-white/5"
+                        }`}
+                      >
+                        {isLit && (
+                          <div className="w-4 h-4 bg-white rounded-full opacity-80 blur-[1px]" />
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[9px] text-white/30 font-bold">
+                      {lightIdx}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </motion.div>
-      )}
+
+          {/* Status Text with Race Engineer Voice */}
+          <div className="text-center space-y-2 mb-6">
+            <p className="font-display font-black text-2xl sm:text-3xl uppercase tracking-wider text-white">
+              {lightsOut
+                ? "LIGHTS OUT & AWAY WE GO!"
+                : stage === 5
+                ? "ALL 5 RED LIGHTS ON... HOLDING REVS..."
+                : `GRID FORMING... LIGHT ${stage} / 5`}
+            </p>
+            <p className="text-xs text-white/50 tracking-wider">
+              {lightsOut
+                ? "LAUNCH TELEMETRY ENGAGED"
+                : "WARMING UP TIRES & GEARBOX"}
+            </p>
+          </div>
+
+          {/* Skip Button */}
+          <div className="w-full pt-4 border-t border-white/10 flex items-center justify-between text-[10px] text-white/40">
+            <span>START GRID SEQUENCE</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                dismiss();
+              }}
+              className="text-white/60 hover:text-[#E8462E] underline underline-offset-4 uppercase transition-colors"
+            >
+              [SKIP TO START / ESC]
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }

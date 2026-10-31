@@ -1,128 +1,146 @@
 "use client";
 
-import { useRef, useMemo } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import dynamic from "next/dynamic";
-
-// Dynamically import the 3D Scene with SSR disabled.
-// This prevents ThreeJS from blocking the initial page load and hydrates it instantly.
-const Hero3DSceneLazy = dynamic(
-  () => import("./Hero3DScene").then((mod) => mod.Hero3DScene),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-black z-0">
-        <div className="w-12 h-12 border-4 border-race-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-race-accent font-display uppercase tracking-widest text-sm whitespace-nowrap">
-          Warming up tires...
-        </p>
-      </div>
-    )
-  }
-);
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 export function HeroAbout() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const text1Ref = useRef<HTMLDivElement>(null);
-  const text2Ref = useRef<HTMLDivElement>(null);
-  const text3Ref = useRef<HTMLDivElement>(null);
+  const [sessionTime, setSessionTime] = useState("");
 
-  // We use useMemo so the proxy reference is stable across renders 
-  // and can be passed down to the lazy-loaded Canvas safely.
-  const scrollProxy = useMemo(() => ({ progress: 0 }), []);
-
-  useGSAP(() => {
-    const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (isReducedMotion) return;
-
-    scrollProxy.progress = 0;
-
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 0.5,
-      }
-    });
-
-    // 1. Link GSAP progress to ThreeJS proxy over the entire 300vh scroll
-    tl.to(scrollProxy, {
-      progress: 1,
-      ease: "none",
-    }, 0);
-
-    // 2. Text Sequence Animations
-    // Text 1 fades out quickly
-    tl.to(text1Ref.current, { opacity: 0, y: -50, duration: 0.2 }, 0);
-    
-    // Text 2 fades in, then fades out
-    tl.fromTo(text2Ref.current, 
-      { opacity: 0, y: 50 }, 
-      { opacity: 1, y: 0, duration: 0.2 }, 
-      0.2
-    );
-    tl.to(text2Ref.current, { opacity: 0, y: -50, duration: 0.2 }, 0.5);
-
-    // Text 3 fades in at the end
-    tl.fromTo(text3Ref.current,
-      { opacity: 0, scale: 0.8 },
-      { opacity: 1, scale: 1, duration: 0.3 },
-      0.6
-    );
-
-  }, { scope: sectionRef });
+  useEffect(() => {
+    const updateUtc = () => {
+      const d = new Date();
+      setSessionTime(d.toUTCString().slice(17, 25) + " UTC");
+    };
+    updateUtc();
+    const interval = setInterval(updateUtc, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <section ref={sectionRef} className="relative w-full bg-black" style={{ height: "300vh" }}>
-      
-      {/* Sticky Container - Stays fixed on screen while scrolling through the 300vh */}
-      <div className="sticky top-0 w-full h-screen overflow-hidden">
-        
-        {/* Background 3D Canvas (Lazy Loaded) */}
-        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
-          <Hero3DSceneLazy scrollProxy={scrollProxy} />
+    <section className="relative w-full border-b border-[#3A3A35] bg-[#1A1A17] text-[#E8E6E1]">
+      {/* Top telemetry ticker strip */}
+      <div className="border-b border-[#3A3A35] bg-[#232320] px-4 md:px-8 py-2 font-mono text-[11px] text-[#78766F] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-[#22C55E]">
+            <span className="w-2 h-2 bg-[#22C55E]" />
+            LIVE TELEMETRY FEED
+          </span>
+          <span className="hidden sm:inline text-[#3A3A35]">|</span>
+          <span className="hidden sm:inline">REG: 2026 POWER UNIT ARCHITECTURE</span>
+          <span className="hidden md:inline text-[#3A3A35]">|</span>
+          <span className="hidden md:inline">SUSTAINABLE FUEL 100% // MGU-K 350KW</span>
         </div>
+        <div className="flex items-center gap-4 tabular-nums">
+          <span>SYS CLK: <span className="text-[#E8E6E1]">{sessionTime || "00:00:00 UTC"}</span></span>
+          <span className="border border-[#3A3A35] px-1.5 py-0.5 text-[#E8462E]">TRACK COND: DRY</span>
+        </div>
+      </div>
 
-        {/* Decorative Grid */}
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 z-0 pointer-events-none" />
-
-        {/* Foreground Text Sequences */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center container mx-auto px-4 md:px-8 text-center pointer-events-none">
+      {/* Main Pit Wall Grid: Asymmetric 12-column engineering layout */}
+      <div className="max-w-[80rem] mx-auto px-4 md:px-8 py-12 md:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* Text 1: Appears on load */}
-          <div ref={text1Ref} className="absolute inset-0 flex flex-col items-center justify-center">
-            <h1 className="text-6xl md:text-8xl lg:text-[120px] font-display uppercase tracking-widest text-white mb-6 drop-shadow-2xl">
-              Welcome to <br />
-              <span className="text-race-accent">RaceTime</span>
+          {/* Left Column (Cols 1-7): Big Display & Mission */}
+          <div className="lg:col-span-7 flex flex-col">
+            <div className="inline-flex items-center gap-2 font-mono text-xs text-[#E8462E] tracking-widest uppercase mb-4">
+              <span className="w-2 h-2 bg-[#E8462E]" />
+              ENGINEERING & TIMING DISPATCH
+            </div>
+
+            <h1 className="font-display font-black text-5xl sm:text-7xl lg:text-8xl tracking-tighter uppercase leading-[0.9] text-[#E8E6E1] mb-6">
+              RACETIME <br />
+              <span className="text-[#78766F]">2026 WORLD</span> <br />
+              <span className="text-[#E8462E]">CHAMPIONSHIP</span>
             </h1>
-            <p className="text-lg md:text-xl font-sans font-bold text-white/60 uppercase tracking-widest">
-              Scroll to start the engine
+
+            <p className="font-mono text-xs sm:text-sm text-[#78766F] max-w-xl leading-relaxed mb-8">
+              PRECISION & SPEED — Your pit wall monitor for the 2026 Formula One season. Real-time sector differentials, session timelines, championship delta analysis, and official calendar tracking.
             </p>
+
+            {/* Direct quick action */}
+            <div className="flex flex-wrap items-center gap-4 font-mono text-xs">
+              <a
+                href="#schedule"
+                className="bg-[#E8462E] hover:bg-[#FF5438] text-white px-5 py-3 font-bold uppercase tracking-wider transition-colors flex items-center gap-2"
+              >
+                <span>OPEN RACE CALENDAR</span>
+                <span>→</span>
+              </a>
+              <a
+                href="#standings"
+                className="border border-[#3A3A35] hover:border-[#E8E6E1] bg-[#232320] text-[#E8E6E1] px-5 py-3 uppercase tracking-wider transition-colors"
+              >
+                WDC & WCC STANDINGS
+              </a>
+            </div>
           </div>
 
-          {/* Text 2: Appears midway */}
-          <div ref={text2Ref} className="absolute inset-0 flex flex-col items-center justify-center opacity-0">
-            <h2 className="text-4xl md:text-6xl font-display uppercase tracking-widest text-white mb-6 drop-shadow-2xl">
-              Precision & <span className="text-race-accent">Speed</span>
-            </h2>
-            <p className="text-xl md:text-2xl font-sans font-medium text-white/80 leading-relaxed max-w-2xl drop-shadow-lg">
-              Experience the pinnacle of motorsport data. Real-time standings, complete calendars, and dynamic track layouts in a stunning cinematic interface.
-            </p>
-          </div>
+          {/* Right Column (Cols 8-12): Timing Monitor Sidebar */}
+          <div className="lg:col-span-5 border border-[#3A3A35] bg-[#232320] divide-y divide-[#3A3A35]">
+            {/* Panel Title */}
+            <div className="p-4 flex items-center justify-between font-mono text-xs bg-[#1A1A17]">
+              <span className="text-[#E8E6E1] font-bold tracking-wider">CHAMPIONSHIP METRICS</span>
+              <span className="text-[#78766F]">DOC // RT-2026-01</span>
+            </div>
 
-          {/* Text 3: Appears at the end of the section */}
-          <div ref={text3Ref} className="absolute inset-0 flex flex-col items-center justify-center opacity-0 mt-32">
-            <h2 className="text-3xl md:text-5xl font-display uppercase tracking-widest text-white drop-shadow-2xl">
-              Prepare for <span className="text-race-accent">Lights Out</span>
-            </h2>
+            {/* Metric Rows */}
+            <div className="p-4 grid grid-cols-2 gap-4 font-mono">
+              <div>
+                <span className="text-[10px] text-[#78766F] uppercase block">GRAND PRIX ROUNDS</span>
+                <span className="text-3xl font-display font-black text-[#E8E6E1] tracking-tight">24</span>
+                <span className="text-[10px] text-[#78766F] block mt-0.5">5 CONTINENTS</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-[#78766F] uppercase block">SEASON HERITAGE</span>
+                <span className="text-3xl font-display font-black text-[#E8E6E1] tracking-tight">76TH</span>
+                <span className="text-[10px] text-[#78766F] block mt-0.5">EST. 1950 FIA</span>
+              </div>
+            </div>
+
+            <div className="p-4 grid grid-cols-2 gap-4 font-mono">
+              <div>
+                <span className="text-[10px] text-[#78766F] uppercase block">TEAMS ON GRID</span>
+                <span className="text-3xl font-display font-black text-[#E8E6E1] tracking-tight">10</span>
+                <span className="text-[10px] text-[#78766F] block mt-0.5">CONSTRUCTORS</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-[#78766F] uppercase block">ACTIVE DRIVERS</span>
+                <span className="text-3xl font-display font-black text-[#E8E6E1] tracking-tight">20</span>
+                <span className="text-[10px] text-[#78766F] block mt-0.5">GRID SEATS</span>
+              </div>
+            </div>
+
+            {/* Sector benchmark */}
+            <div className="p-4 font-mono text-xs">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] text-[#78766F] uppercase">TELEMETRY BENCHMARK</span>
+                <span className="text-[10px] text-[#A855F7] font-bold">FASTEST SECTOR</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[11px] tabular-nums">
+                <div className="border border-[#3A3A35] bg-[#1A1A17] p-2">
+                  <span className="block text-[9px] text-[#78766F]">SEC 1</span>
+                  <span className="text-[#A855F7] font-bold">27.412</span>
+                </div>
+                <div className="border border-[#3A3A35] bg-[#1A1A17] p-2">
+                  <span className="block text-[9px] text-[#78766F]">SEC 2</span>
+                  <span className="text-[#22C55E] font-bold">38.905</span>
+                </div>
+                <div className="border border-[#3A3A35] bg-[#1A1A17] p-2">
+                  <span className="block text-[9px] text-[#78766F]">SEC 3</span>
+                  <span className="text-[#E8462E] font-bold">24.118</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Scroll instruction in race-engineer voice */}
+            <div className="p-4 font-mono text-[11px] text-[#78766F] flex items-center justify-between bg-[#1A1A17]">
+              <span>SCROLL TO START THE ENGINE</span>
+              <span className="text-[#E8462E] font-bold">↓ TELEMETRY</span>
+            </div>
+
           </div>
 
         </div>
-
       </div>
     </section>
   );

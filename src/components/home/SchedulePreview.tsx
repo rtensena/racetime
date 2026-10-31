@@ -1,119 +1,161 @@
 "use client";
 
-import { mockGrandPrix } from "@/lib/mockData";
+import { useState } from "react";
 import { format } from "date-fns";
-import { ArrowRight, Clock } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import { GrandPrix } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { CircuitSvg } from "@/components/ui/CircuitSvg";
 
-export function SchedulePreview() {
-  const nextGp = mockGrandPrix.find((gp) => gp.status === "Upcoming") || mockGrandPrix[0];
-  const containerRef = useRef<HTMLElement>(null);
-  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+interface SchedulePreviewProps {
+  gp: GrandPrix;
+  roundNumber: number;
+  isNextRace: boolean;
+}
 
-  useGSAP(() => {
-    const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (isReducedMotion) {
-      // Just fade in if reduced motion
-      gsap.to(containerRef.current, { opacity: 1, duration: 0.5 });
-      return;
-    }
+export function SchedulePreview({ gp, roundNumber, isNextRace }: SchedulePreviewProps) {
+  const [showSessions, setShowSessions] = useState(false);
+  const isFinished = gp.status === "Finished";
+  const isOngoing = gp.status === "Ongoing";
 
-    // Scrubbing animation for the container (scaling and fading)
-    gsap.fromTo(containerRef.current, 
-      { scale: 0.8, opacity: 0 },
-      { 
-        scale: 1, 
-        opacity: 1, 
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 90%",
-          end: "top 40%",
-          scrub: true,
-        }
-      }
-    );
-
-    // Staggered reveal for cards with scrub
-    cardsRef.current.forEach((card, index) => {
-      gsap.fromTo(card,
-        { y: 100, rotateX: 45, opacity: 0 },
-        {
-          y: 0,
-          rotateX: 0,
-          opacity: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: `top ${80 - index * 10}%`,
-            end: `top ${40 - index * 10}%`,
-            scrub: true,
-          }
-        }
-      );
-    });
-  }, { scope: containerRef });
+  const formattedRound = String(roundNumber).padStart(2, "0");
+  const raceDate = new Date(gp.date);
 
   return (
-    <section ref={containerRef} className="origin-bottom opacity-0">
-      <div className="flex items-end justify-between mb-8 border-b border-white/10 pb-4">
-        <h3 className="text-3xl md:text-5xl font-display uppercase tracking-widest">
-          Race <span className="text-race-accent">Schedule</span>
-        </h3>
-        <Link
-          href="/schedule"
-          className="group flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white transition-colors"
-        >
-          Full Calendar
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
+    <div
+      className={cn(
+        "border-b border-[#3A3A35] transition-colors font-mono",
+        isNextRace ? "bg-[#232320] border-l-4 border-l-[#E8462E]" : "hover:bg-[#232320]/60",
+        isFinished && "opacity-75"
+      )}
+    >
+      {/* Primary Row Grid */}
+      <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        
+        {/* Round & Status Flag (Cols 1-2) */}
+        <div className="md:col-span-2 flex items-center gap-3">
+          <span
+            className={cn(
+              "font-display font-black text-2xl sm:text-3xl tabular-nums leading-none tracking-tight",
+              isNextRace ? "text-[#E8462E]" : isFinished ? "text-[#78766F]" : "text-[#E8E6E1]"
+            )}
+          >
+            {formattedRound}
+          </span>
+          <div className="flex flex-col gap-1">
+            <span
+              className={cn(
+                "text-[9px] px-1.5 py-0.5 border font-bold uppercase tracking-wider inline-block w-fit",
+                isNextRace
+                  ? "border-[#E8462E] bg-[#E8462E] text-white"
+                  : isOngoing
+                  ? "border-[#22C55E] text-[#22C55E]"
+                  : isFinished
+                  ? "border-[#3A3A35] text-[#78766F]"
+                  : "border-[#3A3A35] text-[#E8E6E1]"
+              )}
+            >
+              {isNextRace ? "NEXT UP" : gp.status}
+            </span>
+            {gp.isSprintWeekend && (
+              <span className="text-[9px] text-[#E8462E] border border-[#E8462E]/40 px-1 font-bold uppercase w-fit">
+                SPRINT
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Circuit Line Art (Col 3, desktop only) */}
+        <div className="hidden lg:flex lg:col-span-1 items-center justify-center text-[#78766F] hover:text-[#E8462E] transition-colors">
+          <CircuitSvg name={`${gp.circuit} ${gp.country}`} className="w-14 h-10" />
+        </div>
+
+        {/* Location & Grand Prix Name (Cols 4-7) */}
+        <div className="md:col-span-5 lg:col-span-4 min-w-0">
+          <div className="flex items-baseline gap-2">
+            <h3
+              className={cn(
+                "font-display font-bold text-lg sm:text-xl uppercase tracking-wide truncate",
+                isNextRace ? "text-[#E8462E]" : "text-[#E8E6E1]"
+              )}
+            >
+              {gp.name.replace("Grand Prix", "").trim()} GP
+            </h3>
+            <span className="text-xs text-[#78766F] uppercase">({gp.country})</span>
+          </div>
+          <p className="text-xs text-[#78766F] truncate uppercase mt-0.5">
+            {gp.circuit}
+          </p>
+        </div>
+
+        {/* Date & Local Timing (Cols 8-10) */}
+        <div className="md:col-span-3 lg:col-span-3 text-left md:text-right">
+          <span className="text-xs sm:text-sm font-bold text-[#E8E6E1] block tabular-nums uppercase">
+            {format(raceDate, "dd MMM yyyy")}
+          </span>
+          <span className="text-[11px] text-[#78766F] block tabular-nums">
+            RACE: {format(raceDate, "HH:mm")} LOCAL TIME
+          </span>
+        </div>
+
+        {/* Actions (Cols 11-12) */}
+        <div className="md:col-span-2 flex items-center justify-start md:justify-end gap-2">
+          <button
+            onClick={() => setShowSessions(!showSessions)}
+            aria-expanded={showSessions}
+            className="text-[11px] px-2.5 py-1.5 border border-[#3A3A35] hover:border-[#E8E6E1] text-[#78766F] hover:text-[#E8E6E1] uppercase tracking-wider transition-colors"
+          >
+            {showSessions ? "HIDE [−]" : "TIMETABLE [+]"}
+          </button>
+          <Link
+            href={`/schedule/${gp.id}`}
+            className="text-[11px] px-2.5 py-1.5 bg-[#232320] border border-[#3A3A35] hover:border-[#E8462E] text-[#E8E6E1] hover:text-[#E8462E] uppercase tracking-wider transition-colors"
+          >
+            DETAILS →
+          </Link>
+        </div>
+
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 perspective-[1000px]">
-        {nextGp.sessions.map((session, index) => {
-          const sessionDate = new Date(session.date);
-          const isLive = session.status === "Live";
-          
-          return (
-            <div
-              key={session.id}
-              ref={el => { cardsRef.current[index] = el }}
-              className="bg-race-gray/50 border border-white/5 rounded-xl p-6 hover:border-race-accent/50 hover:shadow-[0_20px_40px_rgba(212,255,0,0.15)] hover:bg-race-gray transition-all duration-300 group relative overflow-hidden transform-gpu hover:-translate-y-2 hover:scale-[1.02]"
-            >
-              {isLive && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-race-accent animate-pulse" />
-              )}
-              
-              <div className="flex justify-between items-start mb-6">
-                <h4 className="text-xl font-display uppercase tracking-wide text-white group-hover:text-race-accent transition-colors">
-                  {session.name}
-                </h4>
-                {isLive ? (
-                  <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-race-accent">
-                    <span className="w-2 h-2 rounded-full bg-race-accent animate-pulse" />
-                    Live
-                  </span>
-                ) : (
-                  <Clock className="w-5 h-5 text-white/20 group-hover:text-race-accent transition-colors transform group-hover:rotate-180 duration-500" />
-                )}
-              </div>
-              
-              <div className="space-y-1">
-                <p className="text-3xl font-bold font-sans tracking-tight text-white group-hover:text-race-accent transition-colors">
-                  {format(sessionDate, "HH:mm")}
-                </p>
-                <p className="text-sm text-white/40 font-medium uppercase tracking-wider">
-                  {format(sessionDate, "EEEE, dd MMM")}
-                </p>
-              </div>
+      {/* Expandable Session Timings in User's Local Time */}
+      {showSessions && (
+        <div className="bg-[#1A1A17] border-t border-[#3A3A35] p-4 sm:p-5">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-[10px] text-[#78766F] uppercase tracking-widest mb-3 flex items-center justify-between border-b border-[#3A3A35] pb-1">
+              <span>OFFICIAL WEEKEND SCHEDULE (USER LOCAL TIMEZONE)</span>
+              <span>CIRCUIT LENGTH: {gp.length || "5.000"} KM</span>
             </div>
-          );
-        })}
-      </div>
-    </section>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              {gp.sessions && gp.sessions.map((sess) => {
+                const sDate = new Date(sess.date);
+                const isMain = sess.name === "Race";
+                return (
+                  <div
+                    key={sess.id}
+                    className={cn(
+                      "p-2.5 border text-xs",
+                      isMain
+                        ? "border-[#E8462E] bg-[#E8462E]/10 text-[#E8462E]"
+                        : "border-[#3A3A35] bg-[#232320] text-[#E8E6E1]"
+                    )}
+                  >
+                    <span className="block text-[10px] text-[#78766F] uppercase">
+                      {sess.name}
+                    </span>
+                    <span className="block font-bold text-sm tabular-nums mt-0.5">
+                      {format(sDate, "HH:mm")}
+                    </span>
+                    <span className="block text-[10px] text-[#78766F] mt-0.5 uppercase">
+                      {format(sDate, "EEE, dd MMM")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

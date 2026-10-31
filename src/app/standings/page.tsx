@@ -29,7 +29,7 @@ export default function StandingsPage() {
   const sharpTransition = { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
   return (
-    <div className="container mx-auto px-4 md:px-8 py-12 md:py-24 max-w-5xl min-h-screen">
+    <div className="container mx-auto px-4 md:px-8 pt-28 pb-20 max-w-5xl min-h-screen">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

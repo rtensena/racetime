@@ -1,49 +1,70 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-race-accent: #D4FF00;
-  --color-race-dark: #000000;
-  --color-race-gray: #111111;
-  --color-race-gray-2: #1a1a1a;
-  --color-race-light: #ffffff;
-  
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-anton), ui-sans-serif, system-ui, sans-serif;
+  /* ─── Palette ─── */
+  --color-background: #0D0D0C;
+  --color-foreground: #E8E6E1;
+  --color-surface: #171715;
+  --color-surface-2: #21211E;
+  --color-rule: #2D2D29;
+  --color-muted: #78766F;
+  --color-accent: #E8462E;
+  --color-accent-hover: #FF5438;
+  --color-live: #22C55E;
+  --color-fastest: #A855F7;
+
+  /* Backwards-compat aliases for standalone pages */
+  --color-race-accent: #E8462E;
+  --color-race-dark: #0D0D0C;
+  --color-race-gray: #171715;
+  --color-race-gray-2: #21211E;
+  --color-race-light: #E8E6E1;
+
+  /* ─── Font stacks ─── */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
 }
 
-:root {
-  --background: #000000;
-  --foreground: #ffffff;
-}
-
+/* ─── Base ─── */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Premium Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #000000;
-}
-::-webkit-scrollbar-thumb {
-  background: #333333;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #D4FF00;
+/* ─── Focus ─── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
-/* Global Selection */
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-background); }
+::-webkit-scrollbar-thumb { background: #2D2D29; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+/* ─── Selection ─── */
 ::selection {
-  background: #D4FF00;
-  color: #000000;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ─── Marquee keyframes ─── */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

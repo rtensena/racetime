@@ -21,7 +21,7 @@ export default function SchedulePage() {
   ) || [];
 
   return (
-    <div className="container mx-auto px-4 md:px-8 py-12 md:py-24 max-w-7xl min-h-screen">
+    <div className="container mx-auto px-4 md:px-8 pt-28 pb-20 max-w-7xl min-h-screen">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

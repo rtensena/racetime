@@ -3,199 +3,243 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { motion, useScroll, useTransform } from "framer-motion";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, MapPin, Trophy } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Flag, Compass } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { TrackMap } from "@/components/ui/TrackMap";
-import { useRef } from "react";
 
 export default function GrandPrixDetail() {
   const params = useParams();
   const router = useRouter();
   const gpId = params.id as string;
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: gp, isLoading, isError } = useQuery({
     queryKey: ["event", gpId],
     queryFn: () => api.getEventDetails(gpId),
   });
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  const borderOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.3, 1, 0.3]);
-
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden py-12 px-4 md:px-8" ref={containerRef}>
-      <div className="container mx-auto max-w-[1600px] mb-8 pt-10">
+    <div className="min-h-screen bg-[#0D0D0C] text-[#E8E6E1] pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+      {/* Top Header / Back Bar */}
+      <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="relative z-50 group flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/60 hover:text-white hover:text-race-accent transition-colors bg-white/5 hover:bg-white/10 px-6 py-3 rounded-full border border-white/10 backdrop-blur-md w-fit"
+          className="group inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2.5 border border-white/10 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          Back to Calendar
+          <span>BACK TO CALENDAR</span>
         </button>
+
+        {gp && (
+          <div className="font-mono text-xs text-[#E8462E] border border-[#E8462E]/30 bg-[#E8462E]/10 px-3 py-1 font-bold uppercase">
+            {gp.status}
+          </div>
+        )}
       </div>
 
+      {/* Loading Skeleton */}
       {isLoading && (
-        <div className="container mx-auto max-w-7xl pt-20">
-          <Skeleton className="w-full h-[80vh] rounded-[40px] border border-race-accent/20" />
-        </div>
-      )}
-
-      {isError && (
-        <div className="py-20 text-center text-race-accent font-bold uppercase tracking-widest">
-          Failed to load Grand Prix details.
-        </div>
-      )}
-
-      {gp && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="relative max-w-[1600px] mx-auto h-auto lg:h-[80vh] min-h-[800px] mt-12 rounded-[2rem] border-2 border-race-accent/40 p-4 md:p-8 shadow-[0_0_30px_rgba(225,6,0,0.15)] flex flex-col lg:flex-row gap-8 overflow-hidden"
-        >
-          {/* Glowing Border Animation */}
-          <motion.div 
-            className="absolute inset-0 rounded-[2rem] border-2 border-race-accent pointer-events-none"
-            style={{ opacity: borderOpacity, filter: "drop-shadow(0 0 10px rgba(225,6,0,0.8))" }}
-          />
-
-          {/* Desktop: Right 3D Track (65-70%). Hidden on Mobile as requested */}
-          <div className="hidden lg:block w-full lg:w-[60%] h-[400px] lg:h-full relative bg-white/[0.02] rounded-3xl border border-white/5 order-1 lg:order-2 overflow-hidden group">
-            <div className="absolute top-6 left-6 z-10 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-race-accent animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-widest text-white/80">Interactive 3D Map</span>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="w-1/3 h-12 bg-white/10" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-6 space-y-4">
+              <Skeleton className="w-full h-64 bg-white/5" />
+              <Skeleton className="w-full h-48 bg-white/5" />
             </div>
-            
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 lg:left-6 lg:translate-x-0 z-10 pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/80 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-                Drag to rotate • Scroll to zoom
-              </span>
-            </div>
-
-            <div className="w-full h-full cursor-grab active:cursor-grabbing">
-              <TrackMap circuitName={gp.circuit} />
+            <div className="lg:col-span-6">
+              <Skeleton className="w-full h-[500px] bg-white/5" />
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Mobile: Full Info, Desktop: Left Info (40%) */}
-          <div className="w-full lg:w-[40%] shrink-0 h-full flex flex-col pt-4 lg:pt-0">
-             
-            <div className="shrink-0 mb-4">
-              <h1 className="text-4xl lg:text-5xl font-display uppercase tracking-widest text-white leading-tight break-words" style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>
-                {gp.name}
-              </h1>
-              <p className="text-xs font-bold text-race-accent uppercase tracking-widest mt-4 max-w-[300px] lg:max-w-full text-ellipsis overflow-hidden whitespace-nowrap" title={`${gp.country} AT ${gp.circuit}`}>
-                {gp.country} AT {gp.circuit}
-              </p>
-            </div>
+      {/* Error View */}
+      {isError && (
+        <div className="max-w-2xl mx-auto py-24 text-center font-mono border border-[#E8462E] bg-[#171715] p-8">
+          <h2 className="text-xl font-bold uppercase text-[#E8462E] mb-2">Grand Prix Data Unavailable</h2>
+          <p className="text-sm text-white/60 mb-6">Unable to load event telemetry for ID: {gpId}</p>
+          <button
+            onClick={() => router.push("/#schedule")}
+            className="border border-[#E8462E] text-[#E8462E] hover:bg-[#E8462E] hover:text-white px-5 py-2.5 text-xs font-bold uppercase transition-colors"
+          >
+            RETURN TO RACE CALENDAR
+          </button>
+        </div>
+      )}
+
+      {/* Main Detail View */}
+      {gp && (
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
-            {/* Schedule - Prominent & Second Position */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="shrink-0 mb-6 w-full flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
-                <p className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Weekend Schedule
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                {(() => {
-                  const firstUpcoming = gp.sessions.find(s => s.status === "Upcoming" || s.status === "Live");
-                  
-                  return gp.sessions.map(s => {
-                    const isNextUp = s.id === firstUpcoming?.id;
-                    const isRace = s.name === "Race";
-                    
-                    return (
-                      <div key={s.id} className={cn(
-                        "flex flex-col md:flex-row justify-between items-start md:items-center font-display uppercase tracking-wider px-4 py-2.5 rounded-xl border transition-colors shadow-lg relative overflow-hidden group gap-2 md:gap-0",
-                        isRace ? "bg-[#1a2600] border-race-accent/40 hover:bg-[#253600]" : 
-                        isNextUp ? "bg-white/[0.08] border-white/30 hover:bg-white/10" : 
-                        "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
-                      )}>
-                        
-                        {isNextUp && !isRace && (
-                          <div className="absolute top-0 left-0 w-1 h-full bg-white/40" />
-                        )}
-                        {isRace && (
-                          <div className="absolute top-0 left-0 w-1 h-full bg-race-accent" />
-                        )}
+            {/* Left Column: Info, Schedule & Track Specs (7 cols) */}
+            <div className="lg:col-span-7 flex flex-col space-y-8">
+              
+              {/* Event Header */}
+              <div className="border-b border-white/10 pb-6">
+                <div className="flex items-center gap-2 font-mono text-xs text-[#E8462E] uppercase tracking-wider mb-2">
+                  <Flag className="w-3.5 h-3.5" />
+                  <span>2026 WORLD CHAMPIONSHIP ROUND</span>
+                  {gp.isSprintWeekend && (
+                    <span className="border border-[#E8462E] px-1.5 py-0.2 text-[10px] ml-2">
+                      SPRINT WEEKEND
+                    </span>
+                  )}
+                </div>
 
+                <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white leading-tight">
+                  {gp.name}
+                </h1>
+
+                <div className="flex items-center gap-2 font-mono text-xs sm:text-sm text-white/60 mt-3">
+                  <MapPin className="w-4 h-4 text-[#E8462E] shrink-0" />
+                  <span className="text-white font-bold">{gp.circuit}</span>
+                  <span>•</span>
+                  <span>{gp.country}</span>
+                </div>
+              </div>
+
+              {/* Official Weekend Schedule */}
+              <div className="border border-white/10 bg-[#171715] p-5 sm:p-6 font-mono">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#E8462E]" />
+                    OFFICIAL WEEKEND TIMETABLE
+                  </span>
+                  <span className="text-[10px] text-white/40 uppercase">LOCAL SYSTEM TIME</span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {gp.sessions && gp.sessions.map((sess) => {
+                    const isRace = sess.name === "Race";
+                    const sessDate = new Date(sess.date);
+
+                    return (
+                      <div
+                        key={sess.id}
+                        className={cn(
+                          "p-3 border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-colors",
+                          isRace
+                            ? "border-[#E8462E] bg-[#E8462E]/10"
+                            : "border-white/10 bg-[#0D0D0C]/80"
+                        )}
+                      >
                         <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "text-lg md:text-xl", 
-                            isRace ? "text-race-accent drop-shadow-[0_0_10px_rgba(212,255,0,0.4)] font-bold md:text-2xl" : "text-white"
-                          )}>
-                            {s.name}
+                          <span
+                            className={cn(
+                              "font-display font-bold text-lg uppercase tracking-wide",
+                              isRace ? "text-[#E8462E]" : "text-white"
+                            )}
+                          >
+                            {sess.name}
                           </span>
-                          {isNextUp && (
-                            <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/10 text-white ml-2 animate-pulse">
-                              {s.status === "Live" ? "Live Now" : "Next Up"}
+                          {sess.status === "Live" && (
+                            <span className="text-[9px] bg-[#22C55E] text-black font-bold uppercase px-1.5 py-0.5 animate-pulse">
+                              LIVE NOW
                             </span>
                           )}
                         </div>
-                        
-                        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-end">
-                          <span className="text-white/50 text-xs font-sans font-semibold tracking-wider">
-                            {format(new Date(s.date), "EEE, dd MMM")}
-                          </span>
-                          <span className={cn(
-                            "font-bold text-xl md:text-2xl text-right", 
-                            isRace ? "text-race-accent" : "text-white"
-                          )}>
-                            {format(new Date(s.date), "HH:mm")}
+
+                        <div className="flex items-center gap-4 text-xs tabular-nums text-white/70">
+                          <span>{format(sessDate, "EEEE, dd MMM")}</span>
+                          <span
+                            className={cn(
+                              "font-bold text-base",
+                              isRace ? "text-[#E8462E]" : "text-white"
+                            )}
+                          >
+                            {format(sessDate, "HH:mm")}
                           </span>
                         </div>
                       </div>
                     );
-                  });
-                })()}
+                  })}
+                </div>
               </div>
-            </motion.div>
-             
-            {/* Stats Grid - Moved down */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4 border-t border-white/10 pt-4 shrink-0">
-              <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">When</p>
-                <p className="text-2xl lg:text-3xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                  {format(new Date(gp.date), "dd-MM")}
-                </p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-0.5">{format(new Date(gp.date), "MMM yyyy")}</p>
-              </motion.div>
 
-              <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">Length</p>
-                <p className="text-2xl lg:text-3xl font-display text-white">
-                  {gp.length || "5.891"} <span className="text-xs text-white/40">KM</span>
-                </p>
-                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-2 mb-0.5">First Competed</p>
-                <p className="text-lg font-display text-race-accent">{gp.firstCompeted || "1950"}</p>
-              </motion.div>
+              {/* Circuit Telemetry Specifications Grid */}
+              <div className="border border-white/10 bg-[#171715] p-5 sm:p-6 font-mono">
+                <span className="text-xs font-bold text-white uppercase tracking-wider block border-b border-white/10 pb-3 mb-4">
+                  CIRCUIT SPECIFICATIONS
+                </span>
 
-              <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-0.5">Distance</p>
-                <p className="text-2xl lg:text-3xl font-display text-white">
-                  {gp.distance || "306.332"} <span className="text-xs text-white/40">KM</span>
-                </p>
-                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-2 mb-0.5">Laps</p>
-                <p className="text-lg font-display text-race-accent">{gp.laps || "52"}</p>
-              </motion.div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                  <div className="border border-white/10 bg-[#0D0D0C] p-3">
+                    <span className="block text-[10px] text-white/40 uppercase mb-1">TRACK LENGTH</span>
+                    <span className="font-display font-bold text-2xl text-white">
+                      {gp.length || "5.412"}
+                    </span>
+                    <span className="text-[10px] text-white/40 block mt-0.5">KM</span>
+                  </div>
+
+                  <div className="border border-white/10 bg-[#0D0D0C] p-3">
+                    <span className="block text-[10px] text-white/40 uppercase mb-1">RACE LAPS</span>
+                    <span className="font-display font-bold text-2xl text-[#E8462E]">
+                      {gp.laps || 57}
+                    </span>
+                    <span className="text-[10px] text-white/40 block mt-0.5">LAPS</span>
+                  </div>
+
+                  <div className="border border-white/10 bg-[#0D0D0C] p-3">
+                    <span className="block text-[10px] text-white/40 uppercase mb-1">RACE DISTANCE</span>
+                    <span className="font-display font-bold text-2xl text-white">
+                      {gp.distance || "308.2"}
+                    </span>
+                    <span className="text-[10px] text-white/40 block mt-0.5">KM</span>
+                  </div>
+
+                  <div className="border border-white/10 bg-[#0D0D0C] p-3">
+                    <span className="block text-[10px] text-white/40 uppercase mb-1">FIRST COMPETED</span>
+                    <span className="font-display font-bold text-2xl text-white">
+                      {gp.firstCompeted || 1950}
+                    </span>
+                    <span className="text-[10px] text-white/40 block mt-0.5">INAUGURAL</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Circuit Description */}
+              {gp.description && (
+                <div className="border border-white/10 bg-[#171715] p-5 sm:p-6 font-mono text-xs text-white/70 leading-relaxed">
+                  <span className="text-white font-bold uppercase block mb-2">CIRCUIT PROFILE:</span>
+                  <p>{gp.description}</p>
+                </div>
+              )}
+
             </div>
 
-            {/* Description - Bottom */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="mb-0 hidden lg:block shrink-0 pt-2 border-t border-white/10">
-              <p className="text-xs text-white/70 leading-relaxed font-sans">
-                {gp.description || "One of the most iconic races on the calendar, featuring high speeds and intense corners."}
-              </p>
-            </motion.div>
+            {/* Right Column: 3D Interactive Circuit Model (5 cols) */}
+            <div className="lg:col-span-5 sticky top-8">
+              <div className="border border-white/10 bg-[#171715] p-4 sm:p-6 flex flex-col">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4 font-mono text-xs">
+                  <span className="font-bold text-white uppercase flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-[#E8462E]" />
+                    3D CIRCUIT ELEVATION MAP
+                  </span>
+                  <span className="text-[10px] text-[#22C55E] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-[#22C55E] animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
+
+                {/* 3D Track Canvas */}
+                <div className="w-full h-[400px] sm:h-[500px] lg:h-[550px] bg-[#0D0D0C] border border-white/10 relative overflow-hidden group">
+                  <div className="absolute bottom-3 left-3 z-10 font-mono text-[9px] text-white/50 bg-black/70 px-2.5 py-1 border border-white/10 uppercase">
+                    DRAG TO ROTATE • SCROLL TO ZOOM
+                  </div>
+                  <TrackMap circuitName={gp.circuit} />
+                </div>
+
+                <div className="mt-3 flex justify-between font-mono text-[10px] text-white/40 uppercase">
+                  <span>CIRCUIT CODE: {gp.id.toUpperCase()}</span>
+                  <span>FIA GRADE 1 CERTIFIED</span>
+                </div>
+              </div>
+            </div>
 
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
