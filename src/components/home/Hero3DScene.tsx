@@ -2,7 +2,7 @@
 
 import { useRef, Suspense, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, ContactShadows, Float, useGLTF } from "@react-three/drei";
+import { Environment, ContactShadows, Float, useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -77,6 +77,34 @@ function CameraRig({ scrollProgress }: { scrollProgress: number }) {
   return null;
 }
 
+function AnimatedGrid() {
+  const gridRef = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (gridRef.current) {
+      // Pindahkan grid ke arah +z agar mobil terlihat melaju ke depan
+      gridRef.current.position.z = (state.clock.elapsedTime * 4) % 2.5;
+    }
+  });
+
+  return (
+    <group ref={gridRef}>
+      <Grid 
+        position={[0, -0.59, 0]} 
+        args={[40, 40]} 
+        cellSize={0.5} 
+        cellThickness={1} 
+        cellColor="#222222" 
+        sectionSize={2.5} 
+        sectionThickness={1.5} 
+        sectionColor="#D4FF00" 
+        fadeDistance={15} 
+        fadeStrength={1.5} 
+      />
+    </group>
+  );
+}
+
 export function Hero3DScene() {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -115,37 +143,25 @@ export function Hero3DScene() {
       className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
     >
       {container && (
-        <ErrorBoundary fallback={<FallbackBackdrop />}>
-          <Suspense fallback={null}>
-            <Canvas
-              eventSource={container}
-              shadows
-              dpr={[1, 1.5]}
-              camera={{ position: [2.8, 1.3, 5.4], fov: 42 }}
-              gl={{ powerPreference: "high-performance", antialias: true, alpha: true }}
-              className="w-full h-full"
-            >
-              <CameraRig scrollProgress={scrollProgress} />
-              
-              <ambientLight intensity={0.7} />
-              <directionalLight position={[10, 15, 8]} intensity={2.2} castShadow shadow-mapSize={[1024, 1024]} />
-              <directionalLight position={[-10, 8, -5]} intensity={1.2} color="#E8462E" />
-              <spotLight position={[0, 12, 0]} intensity={1.5} angle={0.6} penumbra={0.8} />
-
-              <Suspense fallback={null}>
-                <F1CarModel mousePos={mousePos} scrollProgress={scrollProgress} />
-              </Suspense>
-
-              <Environment preset="city" />
-              <ContactShadows
-                position={[0, -0.6, 0]}
-                opacity={0.8}
-                scale={18}
-                blur={2.2}
-                far={4}
-                color="#000000"
-              />
-            </Canvas>
+        <ErrorBoundary fallback={<FallbackMessage />}>
+          <Suspense fallback={
+            <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+              <HtmlLoader />
+            </div>
+          }>
+            <Canvas eventSource={container} shadows dpr={[1, 1.5]} camera={{ position: [3, 1.5, 6], fov: 45 }} gl={{ powerPreference: "high-performance", antialias: false }}>
+            <SceneCamera scrollProxy={scrollProxy} />
+            <ambientLight intensity={0.6} />
+            <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} intensity={2.5} castShadow />
+            <spotLight position={[-10, 10, -10]} angle={0.3} penumbra={1} intensity={1} color="#D4FF00" />
+            
+            <Suspense fallback={<CanvasLoader />}>
+              <ExternalF1Car scrollProxy={scrollProxy} />
+            </Suspense>
+            
+            <Environment preset="city" />
+            <ContactShadows position={[0, -0.6, 0]} opacity={0.7} scale={20} blur={2.5} far={4} />
+          </Canvas>
           </Suspense>
         </ErrorBoundary>
       )}
